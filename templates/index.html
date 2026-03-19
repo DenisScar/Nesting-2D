@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Nesting 2D</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blu:#1F497D; --blu2:#2E6196; --blu3:#4472C4;
+  --blul:#DCE6F1; --blull:#EEF4FB;
+  --grn:#375623; --grnl:#E2EFDA;
+  --gold:#7F6000; --goldl:#FFF2CC;
+  --red:#C00000; --org:#C55A11;
+  --bg:#E8EDF4; --surf:#FFFFFF; --brd:#C8D4E8;
+  --txt:#1A2540; --txt2:#5A6A8A;
+  --hdr-h:48px; --pan-l:310px; --pan-r:244px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:var(--txt);background:var(--bg);}
+
+#hdr{height:var(--hdr-h);background:var(--blu);display:flex;align-items:center;
+     padding:0 18px;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.25);position:relative;z-index:10;}
+#hdr h1{font-size:16px;font-weight:700;color:#fff;letter-spacing:.03em;}
+.badge{font-size:10px;background:rgba(255,255,255,.18);color:#fff;
+       padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.06em;}
+#hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
+
+#body{display:grid;grid-template-columns:var(--pan-l) 1fr var(--pan-r);
+      height:calc(100vh - var(--hdr-h));}
+
+.panel{background:var(--surf);border-right:1px solid var(--brd);
+       display:flex;flex-direction:column;overflow:hidden;}
+.panel:last-child{border-right:none;border-left:1px solid var(--brd);}
+.panel-hdr{background:var(--blu);color:#fff;padding:9px 14px;
+           font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+           display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.panel-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+
+.fld{display:flex;flex-direction:column;gap:3px;}
+.fld label{font-size:11px;font-weight:600;color:var(--blu);letter-spacing:.03em;}
+.fld input,.fld select{padding:6px 9px;border:1.5px solid var(--brd);border-radius:5px;
+  font-size:13px;color:var(--txt);background:var(--blull);outline:none;transition:border-color .15s;}
+.fld input:focus,.fld select:focus{border-color:var(--blu3);background:#fff;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sep{height:1px;background:var(--brd);margin:2px 0;flex-shrink:0;}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--blu);letter-spacing:.04em;}
+
+.tabs{display:flex;gap:4px;background:var(--blull);border-radius:6px;padding:3px;}
+.tab{flex:1;padding:5px 0;border-radius:4px;border:none;cursor:pointer;
+     font-size:11px;font-weight:600;color:var(--txt2);background:transparent;transition:all .15s;}
+.tab.on{background:var(--blu);color:#fff;}
+
+/* ── Upload zone ── */
+#upload-zone{
+  border:2px dashed var(--brd);border-radius:8px;padding:20px 14px;
+  text-align:center;cursor:pointer;transition:all .2s;
+  background:var(--blull);position:relative;
+}
+#upload-zone:hover,#upload-zone.drag{border-color:var(--blu3);background:var(--blul);}
+#upload-zone.drag{border-style:solid;}
+#upload-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.uz-ico{font-size:28px;margin-bottom:6px;}
+.uz-txt{font-size:12px;font-weight:700;color:var(--blu);}
+.uz-sub{font-size:10px;color:var(--txt2);margin-top:3px;}
+
+/* ── DXF list ── */
+#dxf-lista{display:flex;flex-direction:column;gap:5px;}
+#dxf-vazio{font-size:11px;color:var(--txt2);text-align:center;padding:6px 0;font-style:italic;}
+
+.dxf-item{
+  background:var(--surf);border:1px solid var(--brd);border-radius:6px;
+  padding:8px 10px;display:flex;align-items:center;gap:8px;
+  animation:fadeIn .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.di-cor{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(0,0,0,.15);flex-shrink:0;}
+.di-info{flex:1;min-width:0;}
+.di-nome{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.di-dim{font-size:10px;color:var(--txt2);font-family:'Courier New',monospace;margin-top:1px;}
+.di-qtd{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.di-qtd span{font-size:9px;color:var(--txt2);font-weight:600;letter-spacing:.04em;}
+.di-qtd input{width:44px;padding:3px 5px;border:1.5px solid var(--brd);
+  border-radius:4px;font-size:12px;text-align:center;background:var(--blull);outline:none;}
+.di-qtd input:focus{border-color:var(--blu3);background:#fff;}
+.di-rot{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.di-rot span{font-size:9px;color:var(--txt2);font-weight:600;letter-spacing:.04em;}
+.di-rot input{width:14px;height:14px;accent-color:var(--blu3);cursor:pointer;}
+.di-del{background:none;border:none;color:var(--brd);cursor:pointer;
+  font-size:16px;line-height:1;padding:0 2px;transition:color .15s;flex-shrink:0;}
+.di-del:hover{color:var(--red);}
+
+/* Erro DXF */
+.dxf-err{background:#FFF0F0;border:1px solid #F5C6C6;border-radius:5px;
+  padding:7px 10px;font-size:11px;color:var(--red);display:flex;align-items:flex-start;gap:6px;}
+
+/* Rect table */
+#tbl-pecas{width:100%;border-collapse:collapse;font-size:11px;}
+#tbl-pecas th{background:var(--blu);color:#fff;padding:6px 7px;
+  text-align:left;font-weight:600;font-size:10px;letter-spacing:.04em;
+  position:sticky;top:0;z-index:1;}
+#tbl-pecas td{padding:5px 7px;border-bottom:1px solid #EEF2F8;vertical-align:middle;}
+#tbl-pecas tr:nth-child(even) td{background:#F8FAFD;}
+#tbl-pecas tr:hover td{background:var(--blul);}
+#tbl-pecas input[type=text],#tbl-pecas input[type=number]{
+  width:100%;padding:3px 5px;border:1.5px solid var(--brd);
+  border-radius:4px;font-size:11px;background:var(--blull);outline:none;}
+#tbl-pecas input:focus{border-color:var(--blu3);background:#fff;}
+#tbl-pecas input[type=checkbox]{width:13px;height:13px;accent-color:var(--blu3);cursor:pointer;}
+.cor-dot{width:11px;height:11px;border-radius:50%;display:inline-block;
+  border:1.5px solid rgba(0,0,0,.15);}
+.del-btn{background:none;border:none;color:var(--brd);cursor:pointer;
+  font-size:15px;line-height:1;padding:0 2px;transition:color .15s;}
+.del-btn:hover{color:var(--red);}
+
+/* Buttons */
+.btn{padding:8px 16px;border-radius:5px;border:none;cursor:pointer;
+  font-size:12px;font-weight:700;letter-spacing:.04em;
+  transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn:disabled{opacity:.45;cursor:not-allowed!important;}
+.btn-pri{background:var(--blu);color:#fff;}
+.btn-pri:hover:not(:disabled){background:var(--blu2);}
+.btn-grn{background:var(--grn);color:#fff;}
+.btn-grn:hover:not(:disabled){background:#4a7a30;}
+.btn-ghost{background:transparent;border:1.5px solid var(--brd);color:var(--txt2);}
+.btn-ghost:hover{border-color:var(--blu3);color:var(--blu);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-full{width:100%;justify-content:center;}
+
+/* Canvas */
+#canvas-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
+#canvas-toolbar{background:var(--surf);border-bottom:1px solid var(--brd);
+  padding:8px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+#canvas-title{font-size:13px;font-weight:700;color:var(--blu);}
+#canvas-info{font-size:11px;color:var(--txt2);margin-left:auto;}
+#svg-container{flex:1;overflow:hidden;position:relative;cursor:grab;
+  display:flex;align-items:center;justify-content:center;}
+#svg-container:active{cursor:grabbing;}
+
+/* Right panel */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.kpi{background:var(--blull);border:1px solid var(--brd);border-radius:5px;
+  padding:8px 10px;text-align:center;}
+.kpi .kv{font-size:18px;font-weight:700;color:var(--blu);}
+.kpi .kl{font-size:10px;color:var(--txt2);font-weight:600;margin-top:1px;}
+.kpi.dest{background:var(--goldl);border-color:#C9A227;}
+.kpi.dest .kv{color:var(--gold);}
+
+#layout-list{display:flex;flex-direction:column;gap:6px;}
+.layout-item{border:2px solid var(--brd);border-radius:6px;padding:10px 12px;
+  cursor:pointer;transition:all .15s;background:var(--blull);
+  display:flex;align-items:center;gap:10px;}
+.layout-item:hover{border-color:var(--blu3);background:var(--blul);}
+.layout-item.ativo{border-color:var(--blu);background:var(--blul);}
+.li-num{width:28px;height:28px;border-radius:50%;background:var(--blu);color:#fff;
+  font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.layout-item.ativo .li-num{background:var(--blu3);}
+.li-info{flex:1;}
+.li-n{font-size:12px;font-weight:700;color:var(--blu);}
+.li-a{font-size:11px;color:var(--txt2);}
+.aprov-bar{height:4px;border-radius:2px;background:var(--brd);margin-top:4px;overflow:hidden;}
+.aprov-fill{height:100%;border-radius:2px;background:var(--blu3);transition:width .4s;}
+
+/* Progress */
+#progress-wrap{display:none;}
+.prog-bar{height:6px;background:var(--blul);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--blu3);border-radius:3px;
+  width:0;transition:width .3s;animation:pls 1.5s ease-in-out infinite;}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.5}}
+.prog-fill.done{animation:none;background:var(--grn);width:100%;}
+.prog-fill.err{animation:none;background:var(--red);}
+#prog-msg{font-size:11px;color:var(--txt2);margin-top:4px;font-family:monospace;}
+
+#empty{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;color:var(--txt2);gap:10px;}
+#empty .ico{font-size:52px;opacity:.25;}
+#empty p{font-size:13px;}
+
+#tbl-rest{width:100%;border-collapse:collapse;font-size:11px;}
+#tbl-rest th{background:var(--blu);color:#fff;padding:5px 6px;font-size:10px;font-weight:600;}
+#tbl-rest td{padding:4px 6px;border-bottom:1px solid #EEF2F8;}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#1a2540;color:#fff;padding:10px 20px;border-radius:8px;
+  font-size:13px;font-weight:500;opacity:0;transition:all .25s;
+  pointer-events:none;z-index:999;max-width:420px;text-align:center;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Upload progress overlay */
+#upload-progress{
+  display:none;position:absolute;inset:0;
+  background:rgba(31,73,125,.85);border-radius:8px;
+  flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  color:#fff;font-size:12px;font-weight:600;
+}
+#upload-progress.show{display:flex;}
+.up-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <h1>⬡ Nesting 2D</h1>
+  <span class="badge">v2.3</span>
+  <div id="hdr-right">
+    <button class="btn btn-ghost btn-sm" onclick="limpar()">↺ Limpar</button>
+    <button class="btn btn-grn btn-sm" id="btn-baixar" disabled onclick="baixar()">
+      📥 Exportar .xlsx
+    </button>
+  </div>
+</div>
+
+<div id="body">
+
+<!-- ══ ESQUERDO ══════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-hdr"><span>Configuração</span></div>
+  <div class="panel-body">
+
+    <div class="fld">
+      <label>Nome do projeto</label>
+      <input type="text" id="nome_projeto" value="Projeto" placeholder="Ex.: Chassi DB1604">
+    </div>
+
+    <div class="sep"></div>
+
+    <div class="fld">
+      <label>Modo de entrada</label>
+      <div class="tabs">
+        <button class="tab on" id="tab-rect" onclick="setModo('rect')">Retangular</button>
+        <button class="tab"   id="tab-poly" onclick="setModo('poly')">DXF (livre)</button>
+      </div>
+    </div>
+
+    <!-- ── BLOCO DXF ── -->
+    <div id="bloco-dxf" style="display:none;flex-direction:column;gap:8px;">
+
+      <!-- Drop zone -->
+      <div id="upload-zone" style="position:relative"
+           ondragover="onDrag(event,true)" ondragleave="onDrag(event,false)"
+           ondrop="onDrop(event)">
+        <input type="file" id="file-input" accept=".dxf,.DXF" multiple
+               onchange="onFileChange(this.files)">
+        <div id="upload-progress">
+          <div class="up-spinner"></div>
+          <span id="up-prog-txt">Lendo DXFs...</span>
+        </div>
+        <div class="uz-ico">📂</div>
+        <div class="uz-txt">Arraste os DXFs aqui</div>
+        <div class="uz-sub">ou clique para selecionar • múltiplos arquivos aceitos</div>
+      </div>
+
+      <!-- Erros -->
+      <div id="dxf-erros"></div>
+
+      <!-- Lista -->
+      <div id="dxf-vazio">Nenhum DXF carregado ainda.</div>
+      <div id="dxf-lista"></div>
+
+    </div>
+
+    <!-- ── BLOCO RETANGULAR ── -->
+    <div id="bloco-rect">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <span class="sec-lbl">PEÇAS</span>
+        <button class="btn btn-ghost btn-sm" onclick="addPeca()">+ Adicionar</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="tbl-pecas">
+          <thead><tr>
+            <th style="width:14px"></th>
+            <th>Nome</th><th>L</th><th>A</th><th>Qtd</th>
+            <th title="Girar 90°">↺</th><th></th>
+          </tr></thead>
+          <tbody id="tbody-pecas"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="sec-lbl">CHAPA</div>
+    <div class="g2">
+      <div class="fld"><label>X (mm)</label>
+        <input type="number" id="chapa_x" value="1200" min="1"></div>
+      <div class="fld"><label>Y (mm)</label>
+        <input type="number" id="chapa_y" value="2000" min="1"></div>
+      <div class="fld"><label>Gap (mm)</label>
+        <input type="number" id="gap" value="15" min="0" step=".5"></div>
+      <div class="fld"><label>Espessura (mm)</label>
+        <input type="number" id="espessura" value="1.5" min=".1" step=".1"></div>
+      <div class="fld"><label>Margem X (mm)</label>
+        <input type="number" id="margem_x" value="40" min="0"></div>
+      <div class="fld"><label>Margem Y (mm)</label>
+        <input type="number" id="margem_y" value="90" min="0"></div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="sec-lbl">MATERIAL E CUSTO</div>
+    <div class="fld">
+      <label>Material</label>
+      <select id="material" onchange="setRho()">
+        <option data-rho="7850">Aço SAE 1006 / 1008</option>
+        <option data-rho="7850">Aço Galv. Minimizado</option>
+        <option data-rho="8000">Aço Inox AISI 304</option>
+        <option data-rho="7850">Aço Inox AISI 430</option>
+        <option data-rho="2710">Alumínio Liga 1100</option>
+        <option data-rho="1200">Policarbonato</option>
+        <option data-rho="7850">Outro</option>
+      </select>
+    </div>
+    <div class="g2">
+      <div class="fld"><label>ρ (kg/m³)</label>
+        <input type="number" id="rho" value="7850"></div>
+      <div class="fld"><label>R$/kg</label>
+        <input type="number" id="preco_kg" value="4.00" step=".01"></div>
+      <div class="fld"><label>Pintura R$/m²</label>
+        <input type="number" id="pintura_m2" value="20" step=".01"></div>
+      <div class="fld"><label>% ICMS</label>
+        <input type="number" id="icms_pct" value="18" step=".01"></div>
+      <div class="fld"><label>% Outros imp.</label>
+        <input type="number" id="outros_pct" value="9.25" step=".01"></div>
+      <div class="fld"><label>% Lucro</label>
+        <input type="number" id="lucro_pct" value="30" step=".01"></div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div id="progress-wrap">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+      <div id="prog-msg">Iniciando...</div>
+    </div>
+
+    <button class="btn btn-pri btn-full" id="btn-calc" onclick="calcular()">
+      ⚡ Calcular Nesting
+    </button>
+
+  </div>
+</div>
+
+<!-- ══ CANVAS ════════════════════════════════════════════════ -->
+<div id="canvas-wrap">
+  <div id="canvas-toolbar">
+    <span id="canvas-title">—</span>
+    <button class="btn btn-ghost btn-sm" onclick="zoomIn()">＋</button>
+    <button class="btn btn-ghost btn-sm" onclick="zoomOut()">－</button>
+    <button class="btn btn-ghost btn-sm" onclick="fitView()">⊡ Ajustar</button>
+    <span id="canvas-info"></span>
+  </div>
+  <div id="svg-container">
+    <div id="empty">
+      <div class="ico">⬡</div>
+      <p>Configure as peças e clique em Calcular.</p>
+    </div>
+    <svg id="main-svg" style="display:none"></svg>
+  </div>
+</div>
+
+<!-- ══ DIREITO ════════════════════════════════════════════════ -->
+<div class="panel">
+  <div class="panel-hdr">
+    <span>Layouts</span>
+    <span id="n-chapas-badge" style="font-size:11px;font-weight:400;opacity:.8"></span>
+  </div>
+  <div class="panel-body">
+
+    <div class="kpi-grid" id="kpi-grid" style="display:none">
+      <div class="kpi"><div class="kv" id="kv-chapas">—</div><div class="kl">Chapas</div></div>
+      <div class="kpi"><div class="kv" id="kv-aprov">—</div><div class="kl">Aprov. médio</div></div>
+      <div class="kpi"><div class="kv" id="kv-aloc">—</div><div class="kl">Peças alocadas</div></div>
+      <div class="kpi dest"><div class="kv" id="kv-total">—</div><div class="kl">Total solicitado</div></div>
+    </div>
+
+    <div class="sep" id="sep-kpi" style="display:none"></div>
+    <div id="layout-list"></div>
+
+    <div id="wrap-rest" style="display:none">
+      <div class="sep"></div>
+      <div class="sec-lbl" style="margin-bottom:6px">PEÇAS POR TIPO</div>
+      <table id="tbl-rest">
+        <thead><tr>
+          <th style="text-align:left">Peça</th>
+          <th>Sol.</th><th>Aloc.</th>
+        </tr></thead>
+        <tbody id="tbody-rest"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const PALETA=['#4472C4','#ED7D31','#70AD47','#FF0000','#7030A0',
+              '#00B0F0','#FFC000','#FF00FF','#00B050','#C00000',
+              '#5B9BD5','#92D050','#833C00','#203864'];
+
+let _modo='rect', _pecasRect=[], _dxfPecas=[], _chapas=[];
+let _svgIdx=0, _polling=null, _zoom=1, _panX=0, _panY=0;
+let _isPanning=false, _pmx=0, _pmy=0, _pecaId=0;
+
+window.addEventListener('load', () => { addPeca(); initPan(); });
+
+// ── Modo ──────────────────────────────────────────────────
+function setModo(m) {
+  _modo = m;
+  document.getElementById('tab-rect').classList.toggle('on', m==='rect');
+  document.getElementById('tab-poly').classList.toggle('on', m==='poly');
+  document.getElementById('bloco-dxf').style.display  = m==='poly' ? 'flex' : 'none';
+  document.getElementById('bloco-rect').style.display = m==='rect' ? '' : 'none';
+}
+function setRho() {
+  const sel = document.getElementById('material');
+  document.getElementById('rho').value = sel.options[sel.selectedIndex].dataset.rho || 7850;
+}
+
+// ── Upload DXF ────────────────────────────────────────────
+function onDrag(e, over) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.toggle('drag', over);
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  uploadFiles([...e.dataTransfer.files]);
+}
+function onFileChange(files) {
+  uploadFiles([...files]);
+  document.getElementById('file-input').value = '';
+}
+
+async function uploadFiles(files) {
+  const dxfs = files.filter(f => f.name.toLowerCase().endsWith('.dxf'));
+  if (!dxfs.length) { toast('Selecione arquivos .dxf'); return; }
+
+  // Mostrar spinner
+  const prog = document.getElementById('upload-progress');
+  const progTxt = document.getElementById('up-prog-txt');
+  prog.classList.add('show');
+  progTxt.textContent = `Lendo ${dxfs.length} DXF(s)...`;
+
+  try {
+    const fd = new FormData();
+    dxfs.forEach(f => fd.append('dxfs', f));
+
+    const r = await fetch('/api/upload_dxf', { method: 'POST', body: fd });
+    const d = await r.json();
+
+    // Erros de parse
+    const errosEl = document.getElementById('dxf-erros');
+    errosEl.innerHTML = '';
+    (d.erros || []).forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'dxf-err';
+      div.innerHTML = `⚠ <strong>${e.arquivo}</strong>: ${e.erro}`;
+      errosEl.appendChild(div);
+    });
+
+    // Adicionar peças à lista (preservar qtd/rotação existentes)
+    (d.pecas || []).forEach((p, i) => {
+      const existe = _dxfPecas.findIndex(x => x.nome === p.nome);
+      if (existe >= 0) {
+        // Atualiza dimensões mas preserva qtd e rotação
+        _dxfPecas[existe] = { ..._dxfPecas[existe], ...p };
+      } else {
+        _dxfPecas.push({ ...p, qtd: 1, rotacao: true,
+          cor: PALETA[_dxfPecas.length % PALETA.length] });
+      }
+    });
+
+    renderDxfLista();
+    if (d.pecas?.length) toast(`${d.pecas.length} DXF(s) carregado(s) ✓`);
+  } catch(e) {
+    toast('Erro ao enviar arquivos: ' + e.message, 4000);
+  } finally {
+    prog.classList.remove('show');
+  }
+}
+
+function renderDxfLista() {
+  const lista = document.getElementById('dxf-lista');
+  const vazio = document.getElementById('dxf-vazio');
+  lista.innerHTML = '';
+  vazio.style.display = _dxfPecas.length ? 'none' : 'block';
+
+  _dxfPecas.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'dxf-item';
+    div.innerHTML = `
+      <div class="di-cor" style="background:${p.cor}"></div>
+      <div class="di-info">
+        <div class="di-nome" title="${p.arquivo}">${p.nome}</div>
+        <div class="di-dim">${p.largura} × ${p.altura} mm</div>
+      </div>
+      <div class="di-qtd">
+        <span>QTD</span>
+        <input type="number" value="${p.qtd}" min="1"
+               onchange="_dxfPecas[${i}].qtd = parseInt(this.value)||1">
+      </div>
+      <div class="di-rot">
+        <span>↺ 90°</span>
+        <input type="checkbox" ${p.rotacao ? 'checked' : ''}
+               onchange="_dxfPecas[${i}].rotacao = this.checked">
+      </div>
+      <button class="di-del" onclick="removerDxf(${i})" title="Remover">×</button>`;
+    lista.appendChild(div);
+  });
+}
+
+async function removerDxf(i) {
+  const nome = _dxfPecas[i].arquivo;
+  await fetch('/api/remover_dxf', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome }),
+  });
+  _dxfPecas.splice(i, 1);
+  // Recolorir
+  _dxfPecas.forEach((p, j) => p.cor = PALETA[j % PALETA.length]);
+  renderDxfLista();
+}
+
+// ── Peças retangulares ────────────────────────────────────
+function addPeca(nome='', l='', a='', qtd=1, rot=true) {
+  const id  = ++_pecaId;
+  const cor = PALETA[(_pecaId-1) % PALETA.length];
+  _pecasRect.push({ id, nome, largura:l, altura:a, quantidade:qtd, rotacao:rot, cor });
+  const tr = document.createElement('tr');
+  tr.id = `pr-${id}`;
+  tr.innerHTML = `
+    <td><span class="cor-dot" style="background:${cor}"></span></td>
+    <td><input type="text" value="${nome}" placeholder="Nome"
+         oninput="updPeca(${id},'nome',this.value)" style="width:65px"></td>
+    <td><input type="number" value="${l}" placeholder="mm" min="1"
+         oninput="updPeca(${id},'largura',this.value)" style="width:48px"></td>
+    <td><input type="number" value="${a}" placeholder="mm" min="1"
+         oninput="updPeca(${id},'altura',this.value)" style="width:48px"></td>
+    <td><input type="number" value="${qtd}" min="1"
+         oninput="updPeca(${id},'quantidade',this.value)" style="width:38px"></td>
+    <td style="text-align:center">
+      <input type="checkbox" ${rot?'checked':''}
+             onchange="updPeca(${id},'rotacao',this.checked)">
+    </td>
+    <td><button class="del-btn" onclick="delPeca(${id})">×</button></td>`;
+  document.getElementById('tbody-pecas').appendChild(tr);
+}
+function updPeca(id, campo, val) {
+  const p = _pecasRect.find(p => p.id===id); if (!p) return;
+  if (campo==='rotacao') p[campo]=val;
+  else if (['largura','altura','quantidade'].includes(campo)) p[campo]=parseFloat(val)||0;
+  else p[campo]=val;
+}
+function delPeca(id) {
+  _pecasRect = _pecasRect.filter(p => p.id!==id);
+  document.getElementById(`pr-${id}`)?.remove();
+}
+
+// ── Calcular ──────────────────────────────────────────────
+async function calcular() {
+  let pecas;
+  if (_modo === 'rect') {
+    pecas = _pecasRect.filter(p => p.nome && p.largura>0 && p.altura>0 && p.quantidade>0);
+    if (!pecas.length) { toast('Preencha nome, L, A e Qtd de pelo menos uma peça.'); return; }
+  } else {
+    if (!_dxfPecas.length) { toast('Carregue pelo menos um arquivo DXF.'); return; }
+    pecas = _dxfPecas.map(p => ({ nome:p.nome, quantidade:p.qtd, rotacao:p.rotacao }));
+  }
+
+  const val = id => document.getElementById(id).value;
+  const payload = {
+    nome_projeto: val('nome_projeto'), modo: _modo,
+    chapa_x: val('chapa_x'), chapa_y: val('chapa_y'),
+    gap: val('gap'), espessura: val('espessura'),
+    margem_x: val('margem_x'), margem_y: val('margem_y'),
+    material: val('material'), rho: val('rho'),
+    preco_kg: val('preco_kg'), pintura_m2: val('pintura_m2'),
+    icms_pct: val('icms_pct'), outros_pct: val('outros_pct'),
+    lucro_pct: val('lucro_pct'), pecas,
+  };
+
+  const r = await fetch('/api/rodar', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const d = await r.json();
+  if (d.erro) { toast(d.erro); return; }
+
+  document.getElementById('btn-calc').disabled   = true;
+  document.getElementById('btn-baixar').disabled = true;
+  document.getElementById('progress-wrap').style.display = '';
+  document.getElementById('prog-fill').className = 'prog-fill';
+  document.getElementById('prog-fill').style.width = '10%';
+  _polling = setInterval(verificar, 900);
+}
+
+async function verificar() {
+  const d = await (await fetch('/api/status')).json();
+  document.getElementById('prog-msg').textContent = d.progresso || '...';
+  document.getElementById('prog-fill').style.width =
+    ['concluido','erro'].includes(d.status) ? '100%' : '55%';
+  if (d.status === 'concluido') {
+    clearInterval(_polling);
+    document.getElementById('prog-fill').classList.add('done');
+    document.getElementById('btn-calc').disabled   = false;
+    document.getElementById('btn-baixar').disabled = false;
+    await carregarChapas(); mostrarResumo(d.resumo);
+    toast('Nesting concluído ✓');
+  } else if (d.status === 'erro') {
+    clearInterval(_polling);
+    document.getElementById('prog-fill').classList.add('err');
+    document.getElementById('btn-calc').disabled = false;
+    toast('Erro: ' + d.erro, 5000);
+  }
+}
+
+// ── Chapas ────────────────────────────────────────────────
+async function carregarChapas() {
+  const d = await (await fetch('/api/chapas')).json();
+  _chapas = d.chapas; renderLayoutList();
+  if (_chapas.length) exibirChapa(0);
+}
+
+function renderLayoutList() {
+  const el = document.getElementById('layout-list');
+  el.innerHTML = '';
+  _chapas.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'layout-item' + (i===_svgIdx ? ' ativo' : '');
+    div.id = `li-${i}`; div.onclick = () => exibirChapa(i);
+    div.innerHTML = `
+      <div class="li-num">${c.indice}</div>
+      <div class="li-info">
+        <div class="li-n">${c.n_pecas} peça${c.n_pecas!==1?'s':''}</div>
+        <div class="li-a">${c.aproveitamento}% aproveitamento</div>
+        <div class="aprov-bar">
+          <div class="aprov-fill" style="width:${c.aproveitamento}%"></div>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+  document.getElementById('n-chapas-badge').textContent =
+    `${_chapas.length} chapa${_chapas.length!==1?'s':''}`;
+}
+
+function mostrarResumo(r) {
+  ['kpi-grid','sep-kpi'].forEach(id => document.getElementById(id).style.display='');
+  document.getElementById('kv-chapas').textContent = r.n_chapas;
+  document.getElementById('kv-aprov').textContent  = r.aprov;
+  document.getElementById('kv-aloc').textContent   = `${r.n_aloc}/${r.n_total}`;
+  document.getElementById('kv-total').textContent  = r.n_total;
+
+  const src  = _modo==='rect' ? _pecasRect
+               : _dxfPecas.map(p => ({nome:p.nome, quantidade:p.qtd}));
+  const aloc = {};
+  _chapas.forEach(c => c.pecas.forEach(p => { aloc[p.nome]=(aloc[p.nome]||0)+1; }));
+  const tbody = document.getElementById('tbody-rest');
+  tbody.innerHTML = '';
+  src.forEach((p, i) => {
+    const cor = PALETA[i%PALETA.length];
+    const sol = p.quantidade||0, alo = aloc[p.nome]||0;
+    const tr  = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="border-bottom:1px solid #EEF2F8">
+        <span class="cor-dot" style="background:${cor};display:inline-block;
+              vertical-align:middle;margin-right:5px"></span>${p.nome}
+      </td>
+      <td style="text-align:center;border-bottom:1px solid #EEF2F8">${sol}</td>
+      <td style="text-align:center;border-bottom:1px solid #EEF2F8;font-weight:600;
+          color:${alo>=sol?'var(--grn)':'var(--red)'}">${alo}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('wrap-rest').style.display='';
+}
+
+// ── SVG ───────────────────────────────────────────────────
+function exibirChapa(idx) {
+  _svgIdx = idx; const c = _chapas[idx]; if (!c) return;
+  document.querySelectorAll('.layout-item').forEach((el,i) =>
+    el.classList.toggle('ativo', i===idx));
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('main-svg').style.display = 'block';
+  const cont = document.getElementById('svg-container');
+  const PAD=60, cw=cont.clientWidth, ch=cont.clientHeight;
+  _zoom  = Math.min((cw-PAD*2)/c.largura, (ch-PAD*2)/c.altura) * 0.9;
+  _panX  = (cw - c.largura*_zoom) / 2;
+  _panY  = (ch - c.altura*_zoom)  / 2;
+  renderSVG(c);
+  document.getElementById('canvas-title').textContent =
+    `Chapa ${c.indice} de ${_chapas.length}`;
+  document.getElementById('canvas-info').textContent =
+    `${c.n_pecas} peças  |  ${c.aproveitamento}% aprov.  |  ${c.largura}×${c.altura} mm`;
+}
+
+function renderSVG(c) {
+  const svg = document.getElementById('main-svg');
+  const cont = document.getElementById('svg-container');
+  const cw=cont.clientWidth, ch=cont.clientHeight;
+  const sc=_zoom, px=_panX, py=_panY, W=c.largura, H=c.altura;
+  svg.setAttribute('width',cw); svg.setAttribute('height',ch);
+  const ns='http://www.w3.org/2000/svg';
+  svg.innerHTML=`
+    <defs>
+      <filter id="sh"><feDropShadow dx="2" dy="3" stdDeviation="4" flood-opacity=".12"/></filter>
+      <pattern id="hatch" patternUnits="userSpaceOnUse" width="10" height="10">
+        <path d="M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2" stroke="#CCCCCC" stroke-width=".8"/>
+      </pattern>
+    </defs>`;
+  const g=document.createElementNS(ns,'g');
+  g.setAttribute('transform',`translate(${px},${py})`);
+  const mkR=a=>{const r=document.createElementNS(ns,'rect');
+    Object.entries(a).forEach(([k,v])=>r.setAttribute(k,v));return r;};
+  g.appendChild(mkR({x:0,y:0,width:W*sc,height:H*sc,
+    fill:'#F5F5F5',stroke:'#1F497D','stroke-width':2,rx:2,filter:'url(#sh)'}));
+  g.appendChild(mkR({x:0,y:0,width:W*sc,height:H*sc,fill:'url(#hatch)',opacity:.28}));
+
+  c.pecas.forEach(p=>{
+    const gp=document.createElementNS(ns,'g'); gp.style.cursor='pointer';
+    gp.appendChild(mkR({x:p.x*sc,y:p.y*sc,width:p.w*sc,height:p.h*sc,
+      fill:p.cor,stroke:darken(p.cor),'stroke-width':1.2,rx:2,opacity:.88}));
+    const cx=(p.x+p.w/2)*sc, cy=(p.y+p.h/2)*sc;
+    const fs=Math.max(7,Math.min(13,Math.min(p.w*sc/8,p.h*sc/3)));
+    const mkT=(txt,dy,fsz,bold)=>{
+      const t=document.createElementNS(ns,'text');
+      Object.entries({'text-anchor':'middle','dominant-baseline':'middle',
+        'font-size':fsz,'font-family':'Segoe UI,sans-serif',
+        fill:'#FFFFFF','font-weight':bold?'700':'400',x:cx,y:cy+dy})
+        .forEach(([k,v])=>t.setAttribute(k,v));
+      t.textContent=txt; return t;};
+    if(p.w*sc>40&&p.h*sc>18){
+      gp.appendChild(mkT(p.nome,p.h*sc>30?-fs*.55:-1,fs,true));
+      if(p.w*sc>55&&p.h*sc>28)
+        gp.appendChild(mkT(`${p.w.toFixed(0)}×${p.h.toFixed(0)}`+(p.girada?' ↺':''),
+          p.h*sc>30?fs*.65:8,fs*.78,false));
+    }
+    const tt=document.createElementNS(ns,'title');
+    tt.textContent=`${p.nome}  ${p.w.toFixed(1)}×${p.h.toFixed(1)} mm`+
+      (p.girada?' (girada)':'')+`  pos:(${p.x.toFixed(1)},${p.y.toFixed(1)})`;
+    gp.appendChild(tt); g.appendChild(gp);
+  });
+
+  const aL=(x1,y1,x2,y2)=>{const l=document.createElementNS(ns,'line');
+    Object.entries({x1,y1,x2,y2,stroke:'#555','stroke-width':1}).forEach(([k,v])=>l.setAttribute(k,v));
+    g.appendChild(l);};
+  const aT=(x,y,txt,r90)=>{const t=document.createElementNS(ns,'text');
+    Object.entries({x,y,'text-anchor':'middle','dominant-baseline':'middle',
+      'font-size':11,'font-family':'Segoe UI',fill:'#444',
+      ...(r90?{transform:`rotate(-90,${x},${y})`}:{})})
+      .forEach(([k,v])=>t.setAttribute(k,v));
+    t.textContent=txt; g.appendChild(t);};
+
+  const cyC=H*sc+30;
+  aL(0,cyC,W*sc,cyC); aL(0,cyC-5,0,cyC+5); aL(W*sc,cyC-5,W*sc,cyC+5);
+  aT(W*sc/2,cyC+14,`${W.toFixed(0)} mm`);
+  const cxC=W*sc+30;
+  aL(cxC,0,cxC,H*sc); aL(cxC-5,0,cxC+5,0); aL(cxC-5,H*sc,cxC+5,H*sc);
+  aT(cxC+14,H*sc/2,`${H.toFixed(0)} mm`,true);
+  svg.appendChild(g);
+}
+
+function zoomIn(){applyZoom(1.2);}
+function zoomOut(){applyZoom(0.8);}
+function fitView(){if(_chapas[_svgIdx])exibirChapa(_svgIdx);}
+function applyZoom(f){
+  if(!_chapas[_svgIdx])return;
+  const cont=document.getElementById('svg-container');
+  const cx=cont.clientWidth/2, cy=cont.clientHeight/2;
+  _panX=cx-f*(cx-_panX); _panY=cy-f*(cy-_panY); _zoom*=f;
+  renderSVG(_chapas[_svgIdx]);
+}
+function initPan(){
+  const el=document.getElementById('svg-container');
+  el.addEventListener('mousedown',e=>{if(e.button===0){_isPanning=true;_pmx=e.clientX;_pmy=e.clientY;}});
+  el.addEventListener('mousemove',e=>{
+    if(!_isPanning)return;
+    _panX+=e.clientX-_pmx; _panY+=e.clientY-_pmy;
+    _pmx=e.clientX; _pmy=e.clientY;
+    if(_chapas[_svgIdx])renderSVG(_chapas[_svgIdx]);
+  });
+  el.addEventListener('mouseup',()=>_isPanning=false);
+  el.addEventListener('mouseleave',()=>_isPanning=false);
+  el.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const f=e.deltaY<0?1.1:0.9;
+    const rect=el.getBoundingClientRect();
+    _panX=(e.clientX-rect.left)-f*((e.clientX-rect.left)-_panX);
+    _panY=(e.clientY-rect.top)-f*((e.clientY-rect.top)-_panY);
+    _zoom*=f;
+    if(_chapas[_svgIdx])renderSVG(_chapas[_svgIdx]);
+  },{passive:false});
+}
+
+function darken(hex,f=0.6){
+  const p=o=>Math.round(parseInt(hex.slice(o,o+2),16)/255*f*255).toString(16).padStart(2,'0');
+  return `#${p(1)}${p(3)}${p(5)}`;
+}
+function limpar(){
+  _chapas=[];_svgIdx=0;
+  document.getElementById('layout-list').innerHTML='';
+  ['kpi-grid','sep-kpi','wrap-rest'].forEach(id=>
+    document.getElementById(id).style.display='none');
+  document.getElementById('empty').style.display='flex';
+  document.getElementById('main-svg').style.display='none';
+  document.getElementById('canvas-title').textContent='—';
+  document.getElementById('canvas-info').textContent='';
+  document.getElementById('n-chapas-badge').textContent='';
+  document.getElementById('progress-wrap').style.display='none';
+  document.getElementById('btn-baixar').disabled=true;
+}
+function baixar(){window.location.href='/api/baixar';}
+let _toastT;
+function toast(msg,dur=3000){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove('show'),dur);
+}
+</script>
+</body>
+</html>
