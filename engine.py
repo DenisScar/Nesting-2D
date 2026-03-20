@@ -327,11 +327,33 @@ def _arc_pts(cx, cy, r, a_start, a_end, n=32):
              cy + r*math.sin(s+(e-s)*i/n)) for i in range(n+1)]
 
 
-def _collect_lines(msp):
+# Layers padrão do Inventor para contorno externo e furos
+IV_OUTER_LAYERS    = {'IV_OUTER_PROFILE', '0', 'OUTER', 'CONTORNO', 'PROFILE'}
+IV_INTERIOR_LAYERS = {'IV_INTERIOR_PROFILES', 'INTERIOR', 'HOLES', 'FUROS'}
+
+
+def _entity_layer(e):
+    """Retorna o layer de uma entidade DXF."""
+    try:
+        return e.dxf.layer
+    except Exception:
+        return ''
+
+
+def _collect_lines(msp, layer_filter=None):
+    """
+    Coleta segmentos de linha das entidades do modelspace.
+    layer_filter: set de nomes de layer para filtrar (None = todos)
+    """
     from shapely.geometry import LineString
     lines = []
     for e in msp:
         t = e.dxftype()
+        # Filtrar por layer se especificado
+        if layer_filter is not None:
+            layer = _entity_layer(e)
+            if layer not in layer_filter:
+                continue
         try:
             if t == 'LINE':
                 p1 = (e.dxf.start.x, e.dxf.start.y)
@@ -390,6 +412,38 @@ def _collect_lines(msp):
     return lines
 
 
+def _layers_in_file(msp):
+    """Retorna o conjunto de todos os layers presentes no modelspace."""
+    layers = set()
+    for e in msp:
+        try:
+            layers.add(e.dxf.layer)
+        except Exception:
+            pass
+    return layers
+
+
+def _resolve_layers(all_layers):
+    """
+    Determina quais layers usar para outer e holes.
+    Suporta convenções do Inventor (IV_OUTER_PROFILE / IV_INTERIOR_PROFILES)
+    e fallback para todos os layers quando não há convenção conhecida.
+    """
+    # Inventor / Fusion
+    if 'IV_OUTER_PROFILE' in all_layers:
+        outer_layers = {'IV_OUTER_PROFILE'}
+        hole_layers  = {'IV_INTERIOR_PROFILES'} if 'IV_INTERIOR_PROFILES' in all_layers else set()
+        return outer_layers, hole_layers
+
+    # AutoCAD genérico com nomes descritivos
+    for candidate in ('OUTER','CONTORNO','PROFILE','CORTE','CUT','PERIMETER'):
+        if candidate in all_layers:
+            return {candidate}, all_layers - {candidate}
+
+    # Sem convenção: usar todos os layers (comportamento anterior)
+    return all_layers, set()
+
+
 def parse_dxf(filepath: str) -> dict:
     import ezdxf
     from shapely.ops import polygonize, unary_union
@@ -397,23 +451,41 @@ def parse_dxf(filepath: str) -> dict:
 
     doc = ezdxf.readfile(filepath)
     msp = doc.modelspace()
-    lines = _collect_lines(msp)
 
-    if not lines:
-        raise ValueError('Nenhuma geometria encontrada.')
+    all_layers   = _layers_in_file(msp)
+    outer_layers, hole_layers = _resolve_layers(all_layers)
 
-    polys = list(polygonize(lines))
+    # Construir outer polygon
+    lines_outer = _collect_lines(msp, layer_filter=outer_layers if outer_layers else None)
+    if not lines_outer:
+        raise ValueError(f'Nenhuma geometria encontrada nos layers: {outer_layers}')
+
+    polys = list(polygonize(lines_outer))
     if not polys:
-        merged = unary_union(lines)
+        merged = unary_union(lines_outer)
         polys  = list(polygonize(merged))
     if not polys:
-        raise ValueError('Não foi possível reconstruir o polígono. '
+        raise ValueError('Não foi possível reconstruir o polígono. ' 
                          'Verifique se o contorno está fechado.')
 
     polys.sort(key=lambda p: p.area, reverse=True)
-    outer  = polys[0]
-    holes  = [p for p in polys[1:] if p.area > 0.5 and outer.contains(p)]
+    outer = polys[0]
 
+    # Construir hole polygons
+    holes = []
+    if hole_layers:
+        lines_holes = _collect_lines(msp, layer_filter=hole_layers)
+        if lines_holes:
+            hole_polys = list(polygonize(lines_holes))
+            if not hole_polys:
+                merged_h = unary_union(lines_holes)
+                hole_polys = list(polygonize(merged_h))
+            holes = [p for p in hole_polys if p.area > 0.5]
+    else:
+        # Sem layer dedicado: furos são polígonos menores contidos no outer
+        holes = [p for p in polys[1:] if p.area > 0.5 and outer.contains(p)]
+
+    # Normalizar para origem
     b = outer.bounds
     outer_n = affinity.translate(outer, -b[0], -b[1])
     holes_n = [affinity.translate(h, -b[0], -b[1]) for h in holes]
