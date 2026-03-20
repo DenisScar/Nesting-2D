@@ -125,7 +125,7 @@ def _executar(dados):
                 raise ValueError('Nenhum DXF carregado.')
 
             for i, (arq_nome, entry) in enumerate(_dxf_store.items()):
-                _job['progresso'] = f'Preparando peça {i+1}/{len(_dxf_store)}: {arq_nome}'
+                _job['progresso'] = f'Lendo DXF {i+1}/{len(_dxf_store)}: {arq_nome}'
                 info = entry['info']
                 cfg  = peca_cfg.get(info['nome'], {})
                 qtd  = int(cfg.get('quantidade', 1))
@@ -165,10 +165,10 @@ def _executar(dados):
             raise ValueError('Nenhuma peça configurada.')
 
         n_total = sum(p.quantidade for p in pecas)
-        _job['progresso'] = f'Calculando nesting ({n_total} peças)...'
+        _job['progresso'] = f'Calculando nesting — {n_total} peças, modo {modo.upper()}...'
         chapas = run(pecas, sheet_w, sheet_h, gap, mx, my, modo=modo)
 
-        _job['progresso'] = f'Gerando relatório ({len(chapas)} chapas)...'
+        _job['progresso'] = f'Gerando relatório xlsx — {len(chapas)} chapa(s)...'
         cor_map = {p.id: p.cor for p in pecas}
         for pc in pecas_export:
             pc['cor'] = cor_map.get(pc['nome'], '#4472C4')

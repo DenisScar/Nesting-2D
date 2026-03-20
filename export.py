@@ -42,21 +42,46 @@ def _render_chapa(chapa_dict, sheet_w, sheet_h, margin_x, margin_y, idx, total):
         sheet_w - 2*margin_x, sheet_h - 2*margin_y,
         lw=1, ec='#AAAAAA', fc='#FAFAFA', ls='--', zorder=2))
 
-    # Peças
+    # Peças — polígonos reais com suporte a furos
+    from matplotlib.patches import PathPatch
+    from matplotlib.path import Path as MPath
+
     for p in chapa_dict['pecas']:
         cor   = p['cor']
         borda = _darker(cor)
-        ax.add_patch(mpatches.Rectangle(
-            (p['x'], p['y']), p['w'], p['h'],
-            lw=1.2, ec=borda, fc=(*_hex_rgb(cor), 0.85), zorder=3))
+        poly_coords = p.get('poly_coords', [])
+        hole_coords = p.get('hole_coords', [])
 
-        # Rótulo central
-        cx = p['x'] + p['w']/2
-        cy = p['y'] + p['h']/2
+        if poly_coords and len(poly_coords) >= 3:
+            verts = [(x, y) for x, y in poly_coords]
+            codes = ([MPath.MOVETO] +
+                     [MPath.LINETO] * (len(verts) - 2) +
+                     [MPath.CLOSEPOLY])
+            for hole in hole_coords:
+                if len(hole) >= 3:
+                    verts += [(x, y) for x, y in hole]
+                    codes += ([MPath.MOVETO] +
+                               [MPath.LINETO] * (len(hole) - 2) +
+                               [MPath.CLOSEPOLY])
+            patch = PathPatch(MPath(verts, codes),
+                              lw=1.2, ec=borda,
+                              fc=(*_hex_rgb(cor), 0.85), zorder=3)
+            ax.add_patch(patch)
+            xs = [v[0] for v in poly_coords]
+            ys = [v[1] for v in poly_coords]
+            cx = (min(xs) + max(xs)) / 2
+            cy = (min(ys) + max(ys)) / 2
+        else:
+            ax.add_patch(mpatches.Rectangle(
+                (p['x'], p['y']), p['w'], p['h'],
+                lw=1.2, ec=borda, fc=(*_hex_rgb(cor), 0.85), zorder=3))
+            cx = p['x'] + p['w'] / 2
+            cy = p['y'] + p['h'] / 2
+
         fs = max(5, min(9, p['w']/60, p['h']/20))
-        rot_str = '\n↺90°' if p['girada'] else ''
+        ang_str = f"\n↺{p.get('angulo',0):.0f}°" if p.get('angulo') else ''
         ax.text(cx, cy,
-                f"{p['nome']}\n{p['label']}{rot_str}",
+                f"{p['nome']}\n{p['label']}{ang_str}",
                 ha='center', va='center', fontsize=fs,
                 fontweight='bold', color='white', zorder=4,
                 bbox=dict(boxstyle='round,pad=0.15', fc='none', ec='none'))

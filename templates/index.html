@@ -172,14 +172,26 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .aprov-fill{height:100%;border-radius:2px;background:var(--blu3);transition:width .4s;}
 
 /* Progress */
-#progress-wrap{display:none;}
-.prog-bar{height:6px;background:var(--blul);border-radius:3px;overflow:hidden;}
-.prog-fill{height:100%;background:var(--blu3);border-radius:3px;
-  width:0;transition:width .3s;animation:pls 1.5s ease-in-out infinite;}
-@keyframes pls{0%,100%{opacity:1}50%{opacity:.5}}
+#progress-wrap{display:none;flex-direction:column;gap:6px;}
+.prog-bar{height:8px;background:var(--blul);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;background:var(--blu3);border-radius:4px;
+  width:0;transition:width .5s ease;}
+.prog-fill.running{animation:pls 1.8s ease-in-out infinite;}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.55}}
 .prog-fill.done{animation:none;background:var(--grn);width:100%;}
-.prog-fill.err{animation:none;background:var(--red);}
-#prog-msg{font-size:11px;color:var(--txt2);margin-top:4px;font-family:monospace;}
+.prog-fill.err{animation:none;background:var(--red);width:100%;}
+#prog-steps{display:flex;flex-direction:column;gap:3px;}
+.prog-step{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--txt2);}
+.prog-step .ps-ico{font-size:13px;width:16px;text-align:center;flex-shrink:0;}
+.prog-step .ps-txt{flex:1;}
+.prog-step.done .ps-ico::before{content:'✓';}
+.prog-step.done{color:var(--grn);}
+.prog-step.active{color:var(--blu);font-weight:600;}
+.prog-step.active .ps-ico{animation:spin .8s linear infinite;display:inline-block;}
+.prog-step.err{color:var(--red);}
+#prog-msg{font-size:10px;color:var(--txt2);font-family:monospace;
+  background:var(--blull);border-radius:4px;padding:4px 8px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 #empty{display:flex;flex-direction:column;align-items:center;
   justify-content:center;height:100%;color:var(--txt2);gap:10px;}
@@ -334,7 +346,15 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
     <div class="sep"></div>
 
     <div id="progress-wrap">
+      <!-- Etapas visuais -->
+      <div id="prog-steps">
+        <div class="prog-step" id="ps-upload"><span class="ps-ico">○</span><span class="ps-txt">Lendo DXFs</span></div>
+        <div class="prog-step" id="ps-calc"  ><span class="ps-ico">○</span><span class="ps-txt">Calculando nesting</span></div>
+        <div class="prog-step" id="ps-export"><span class="ps-ico">○</span><span class="ps-txt">Gerando relatório</span></div>
+      </div>
+      <!-- Barra geral -->
       <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+      <!-- Mensagem detalhada -->
       <div id="prog-msg">Iniciando...</div>
     </div>
 
@@ -623,19 +643,79 @@ async function calcular(){
   if(d.erro){toast(d.erro);return;}
   document.getElementById('btn-calc').disabled=true;
   document.getElementById('btn-baixar').disabled=true;
-  document.getElementById('progress-wrap').style.display='';
-  document.getElementById('prog-fill').className='prog-fill';
-  document.getElementById('prog-fill').style.width='10%';
+  document.getElementById('progress-wrap').style.display='flex';
+  const pf=document.getElementById('prog-fill');
+  pf.className='prog-fill running';
+  pf.style.width='5%';
+  // Reset steps
+  ['ps-upload','ps-calc','ps-export'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.className='prog-step';el.querySelector('.ps-ico').textContent='○';}
+  });
+  document.getElementById('prog-msg').textContent='Iniciando...';
   _polling=setInterval(verificar,900);
+}
+
+// Mapeamento de palavras-chave nas mensagens para etapas
+function _updateSteps(msg, status) {
+  const m = (msg||'').toLowerCase();
+  const steps = {
+    'ps-upload': ['lendo','preparando','dxf'],
+    'ps-calc':   ['calculando','nesting','peça'],
+    'ps-export': ['gerando','relatório','xlsx'],
+  };
+
+  // Determinar etapa ativa atual
+  let activeStep = null;
+  for (const [id, keywords] of Object.entries(steps)) {
+    if (keywords.some(k => m.includes(k))) { activeStep = id; break; }
+  }
+  // Fallback: calcular se não reconheceu
+  if (!activeStep && status === 'rodando') activeStep = 'ps-calc';
+
+  const ids = Object.keys(steps);
+  const activeIdx = ids.indexOf(activeStep);
+
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'prog-step';
+    const ico = el.querySelector('.ps-ico');
+    if (status === 'concluido') {
+      el.classList.add('done');
+      ico.textContent = '✓';
+    } else if (status === 'erro' && i <= activeIdx) {
+      el.classList.add('err');
+      ico.textContent = '✕';
+    } else if (i < activeIdx) {
+      el.classList.add('done');
+      ico.textContent = '✓';
+    } else if (i === activeIdx) {
+      el.classList.add('active');
+      ico.textContent = '⟳';
+    } else {
+      ico.textContent = '○';
+    }
+  });
+
+  // Barra de progresso por etapa
+  const pct = status === 'concluido' ? 100
+            : status === 'erro'      ? 100
+            : activeIdx === 0        ? 20
+            : activeIdx === 1        ? 55
+            : activeIdx === 2        ? 85
+            : 10;
+  document.getElementById('prog-fill').style.width = pct + '%';
 }
 
 async function verificar(){
   const d=await(await fetch('/api/status')).json();
   document.getElementById('prog-msg').textContent=d.progresso||'...';
-  document.getElementById('prog-fill').style.width=
-    ['concluido','erro'].includes(d.status)?'100%':'55%';
+  _updateSteps(d.progresso, d.status);
+
   if(d.status==='concluido'){
     clearInterval(_polling);
+    document.getElementById('prog-fill').classList.remove('running');
     document.getElementById('prog-fill').classList.add('done');
     document.getElementById('btn-calc').disabled=false;
     document.getElementById('btn-baixar').disabled=false;
@@ -643,6 +723,7 @@ async function verificar(){
     toast('Nesting concluído ✓');
   } else if(d.status==='erro'){
     clearInterval(_polling);
+    document.getElementById('prog-fill').classList.remove('running');
     document.getElementById('prog-fill').classList.add('err');
     document.getElementById('btn-calc').disabled=false;
     toast('Erro: '+d.erro,5000);
