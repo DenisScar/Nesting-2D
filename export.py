@@ -137,16 +137,12 @@ def gerar(chapas_dict, pecas_cfg, config, output_path):
     ws.merge_cells('A3:E3')
     hc(ws['A3'], 'PARÂMETROS DA CHAPA E PROCESSO')
     pars = [
-        ('Material',            config.get('material','')),
-        ('Espessura (mm)',       config.get('espessura','')),
-        ('Chapa X × Y (mm)',    f'{config.get("sheet_w","")} × {config.get("sheet_h","")}'),
-        ('Gap (mm)',             config.get('gap','')),
-        ('Margem X / Y (mm)',   f'{config.get("margin_x","")} / {config.get("margin_y","")}'),
-        ('Preço MP (R$/kg)',     config.get('preco_kg','')),
-        ('Pintura (R$/m²)',      config.get('pintura_m2',0)),
-        ('% ICMS',              config.get('icms_pct',0)),
-        ('% Outros impostos',   config.get('outros_pct',0)),
-        ('% Lucro',             config.get('lucro_pct',0)),
+        ('Material',           config.get('material','')),
+        ('Espessura (mm)',      config.get('espessura','')),
+        ('Chapa X × Y (mm)',   f'{config.get("sheet_w","")} × {config.get("sheet_h","")}'),
+        ('Gap (mm)',            config.get('gap','')),
+        ('Margem X / Y (mm)',  f'{config.get("margin_x","")} / {config.get("margin_y","")}'),
+        ('Preço MP (R$/kg)',    config.get('preco_kg',0)),
     ]
     for i,(lbl,val) in enumerate(pars):
         r = 4+i
@@ -167,22 +163,18 @@ def gerar(chapas_dict, pecas_cfg, config, output_path):
     outros     = config.get('outros_pct', 9.25)
     lucro      = config.get('lucro_pct', 30)
 
-    massa_chapa = (sheet_w/1000)*(sheet_h/1000)*(esp/1000)*rho
-    custo_mp    = massa_chapa * preco_kg * n_chapas
-    area_pecas  = sum(p['w']*p['h']/1e6 for c in chapas_dict for p in c['pecas'])
-    custo_pint  = area_pecas * pintura
-    base        = custo_mp + custo_pint
-    preco_venda = base*(1+outros/100)/(1-icms/100)*(1+lucro/100) if icms < 100 else 0
+    massa_chapa  = (sheet_w/1000)*(sheet_h/1000)*(esp/1000)*rho
+    massa_total  = massa_chapa * n_chapas
+    custo_mp     = massa_chapa * preco_kg * n_chapas
 
     rr = 4+len(pars)+2
     ws.merge_cells(f'A{rr-1}:E{rr-1}')
     hc(ws[f'A{rr-1}'], 'RESULTADOS', fill=GOLD)
     res = [
-        ('Chapas necessárias',      n_chapas,            '0'),
-        ('Aproveitamento médio',     aprov_med/100,       '0.0%'),
-        ('Custo MP total (R$)',      custo_mp,            'R$ #,##0.00'),
-        ('Custo pintura total (R$)', custo_pint,          'R$ #,##0.00'),
-        ('Preço de venda est. (R$)', preco_venda,         'R$ #,##0.00'),
+        ('Chapas necessárias',   n_chapas,        '0'),
+        ('Aproveitamento médio', aprov_med/100,   '0.0%'),
+        ('Peso total (kg)',       round(massa_total, 2), '#,##0.00'),
+        ('Custo MP total (R$)',  custo_mp,        'R$ #,##0.00'),
     ]
     for i,(lbl,val,fmt) in enumerate(res):
         r = rr+i

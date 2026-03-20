@@ -10,13 +10,16 @@
   --blul:#DCE6F1; --blull:#EEF4FB;
   --grn:#375623; --grnl:#E2EFDA;
   --gold:#7F6000; --goldl:#FFF2CC;
-  --red:#C00000; --org:#C55A11;
+  --red:#C00000;
   --bg:#E8EDF4; --surf:#FFFFFF; --brd:#C8D4E8;
   --txt:#1A2540; --txt2:#5A6A8A;
-  --hdr-h:48px; --pan-l:310px; --pan-r:244px;
+  --hdr-h:48px;
+  --pan-l:360px;   /* ← mais largo */
+  --pan-r:244px;
 }
 html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;color:var(--txt);background:var(--bg);}
 
+/* Header */
 #hdr{height:var(--hdr-h);background:var(--blu);display:flex;align-items:center;
      padding:0 18px;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.25);position:relative;z-index:10;}
 #hdr h1{font-size:16px;font-weight:700;color:#fff;letter-spacing:.03em;}
@@ -24,54 +27,59 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
        padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:.06em;}
 #hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center;}
 
+/* Layout */
 #body{display:grid;grid-template-columns:var(--pan-l) 1fr var(--pan-r);
       height:calc(100vh - var(--hdr-h));}
 
 .panel{background:var(--surf);border-right:1px solid var(--brd);
        display:flex;flex-direction:column;overflow:hidden;}
 .panel:last-child{border-right:none;border-left:1px solid var(--brd);}
-.panel-hdr{background:var(--blu);color:#fff;padding:9px 14px;
+.panel-hdr{background:var(--blu);color:#fff;padding:9px 16px;
            font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
            display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.panel-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.panel-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px;}
 
+/* Fields */
 .fld{display:flex;flex-direction:column;gap:3px;}
 .fld label{font-size:11px;font-weight:600;color:var(--blu);letter-spacing:.03em;}
-.fld input,.fld select{padding:6px 9px;border:1.5px solid var(--brd);border-radius:5px;
+.fld input,.fld select{padding:7px 10px;border:1.5px solid var(--brd);border-radius:5px;
   font-size:13px;color:var(--txt);background:var(--blull);outline:none;transition:border-color .15s;}
 .fld input:focus,.fld select:focus{border-color:var(--blu3);background:#fff;}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 .sep{height:1px;background:var(--brd);margin:2px 0;flex-shrink:0;}
-.sec-lbl{font-size:11px;font-weight:700;color:var(--blu);letter-spacing:.04em;}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--blu);letter-spacing:.05em;text-transform:uppercase;}
 
-.tabs{display:flex;gap:4px;background:var(--blull);border-radius:6px;padding:3px;}
-.tab{flex:1;padding:5px 0;border-radius:4px;border:none;cursor:pointer;
-     font-size:11px;font-weight:600;color:var(--txt2);background:transparent;transition:all .15s;}
-.tab.on{background:var(--blu);color:#fff;}
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--blull);border-radius:7px;padding:3px;}
+.tab{flex:1;padding:6px 0;border-radius:5px;border:none;cursor:pointer;
+     font-size:12px;font-weight:600;color:var(--txt2);background:transparent;transition:all .15s;}
+.tab.on{background:var(--blu);color:#fff;box-shadow:0 1px 4px rgba(31,73,125,.25);}
 
-/* ── Upload zone ── */
+/* Upload zone */
 #upload-zone{
-  border:2px dashed var(--brd);border-radius:8px;padding:20px 14px;
+  border:2px dashed var(--brd);border-radius:8px;padding:18px 14px;
   text-align:center;cursor:pointer;transition:all .2s;
   background:var(--blull);position:relative;
 }
 #upload-zone:hover,#upload-zone.drag{border-color:var(--blu3);background:var(--blul);}
 #upload-zone.drag{border-style:solid;}
-#upload-zone input[type=file]{
-  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
-}
-.uz-ico{font-size:28px;margin-bottom:6px;}
+#upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.uz-ico{font-size:26px;margin-bottom:5px;}
 .uz-txt{font-size:12px;font-weight:700;color:var(--blu);}
-.uz-sub{font-size:10px;color:var(--txt2);margin-top:3px;}
+.uz-sub{font-size:10px;color:var(--txt2);margin-top:2px;}
 
-/* ── DXF list ── */
+/* DXF list header */
+.dxf-list-hdr{display:flex;align-items:center;justify-content:space-between;}
+.dxf-count{font-size:11px;color:var(--txt2);}
+
+/* DXF items */
 #dxf-lista{display:flex;flex-direction:column;gap:5px;}
-#dxf-vazio{font-size:11px;color:var(--txt2);text-align:center;padding:6px 0;font-style:italic;}
-
+#dxf-vazio{font-size:11px;color:var(--txt2);text-align:center;padding:8px 0;font-style:italic;}
 .dxf-item{
   background:var(--surf);border:1px solid var(--brd);border-radius:6px;
-  padding:8px 10px;display:flex;align-items:center;gap:8px;
-  animation:fadeIn .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.06);
+  padding:8px 12px;display:flex;align-items:center;gap:9px;
+  animation:fadeIn .2s ease;box-shadow:0 1px 3px rgba(0,0,0,.05);
 }
 @keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 .di-cor{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(0,0,0,.15);flex-shrink:0;}
@@ -80,7 +88,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .di-dim{font-size:10px;color:var(--txt2);font-family:'Courier New',monospace;margin-top:1px;}
 .di-qtd{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
 .di-qtd span{font-size:9px;color:var(--txt2);font-weight:600;letter-spacing:.04em;}
-.di-qtd input{width:44px;padding:3px 5px;border:1.5px solid var(--brd);
+.di-qtd input{width:46px;padding:4px 5px;border:1.5px solid var(--brd);
   border-radius:4px;font-size:12px;text-align:center;background:var(--blull);outline:none;}
 .di-qtd input:focus{border-color:var(--blu3);background:#fff;}
 .di-rot{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
@@ -89,26 +97,23 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .di-del{background:none;border:none;color:var(--brd);cursor:pointer;
   font-size:16px;line-height:1;padding:0 2px;transition:color .15s;flex-shrink:0;}
 .di-del:hover{color:var(--red);}
-
-/* Erro DXF */
 .dxf-err{background:#FFF0F0;border:1px solid #F5C6C6;border-radius:5px;
   padding:7px 10px;font-size:11px;color:var(--red);display:flex;align-items:flex-start;gap:6px;}
 
 /* Rect table */
-#tbl-pecas{width:100%;border-collapse:collapse;font-size:11px;}
-#tbl-pecas th{background:var(--blu);color:#fff;padding:6px 7px;
+#tbl-pecas{width:100%;border-collapse:collapse;font-size:12px;}
+#tbl-pecas th{background:var(--blu);color:#fff;padding:7px 8px;
   text-align:left;font-weight:600;font-size:10px;letter-spacing:.04em;
   position:sticky;top:0;z-index:1;}
-#tbl-pecas td{padding:5px 7px;border-bottom:1px solid #EEF2F8;vertical-align:middle;}
+#tbl-pecas td{padding:6px 8px;border-bottom:1px solid #EEF2F8;vertical-align:middle;}
 #tbl-pecas tr:nth-child(even) td{background:#F8FAFD;}
 #tbl-pecas tr:hover td{background:var(--blul);}
 #tbl-pecas input[type=text],#tbl-pecas input[type=number]{
-  width:100%;padding:3px 5px;border:1.5px solid var(--brd);
+  width:100%;padding:4px 6px;border:1.5px solid var(--brd);
   border-radius:4px;font-size:11px;background:var(--blull);outline:none;}
 #tbl-pecas input:focus{border-color:var(--blu3);background:#fff;}
-#tbl-pecas input[type=checkbox]{width:13px;height:13px;accent-color:var(--blu3);cursor:pointer;}
-.cor-dot{width:11px;height:11px;border-radius:50%;display:inline-block;
-  border:1.5px solid rgba(0,0,0,.15);}
+#tbl-pecas input[type=checkbox]{width:14px;height:14px;accent-color:var(--blu3);cursor:pointer;}
+.cor-dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1.5px solid rgba(0,0,0,.15);}
 .del-btn{background:none;border:none;color:var(--brd);cursor:pointer;
   font-size:15px;line-height:1;padding:0 2px;transition:color .15s;}
 .del-btn:hover{color:var(--red);}
@@ -124,6 +129,8 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .btn-grn:hover:not(:disabled){background:#4a7a30;}
 .btn-ghost{background:transparent;border:1.5px solid var(--brd);color:var(--txt2);}
 .btn-ghost:hover{border-color:var(--blu3);color:var(--blu);}
+.btn-red{background:transparent;border:1.5px solid #F5C6C6;color:var(--red);font-size:11px;padding:4px 10px;}
+.btn-red:hover{background:#FFF0F0;border-color:var(--red);}
 .btn-sm{padding:5px 10px;font-size:11px;}
 .btn-full{width:100%;justify-content:center;}
 
@@ -171,30 +178,30 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .prog-fill.err{animation:none;background:var(--red);}
 #prog-msg{font-size:11px;color:var(--txt2);margin-top:4px;font-family:monospace;}
 
+/* Empty state */
 #empty{display:flex;flex-direction:column;align-items:center;
   justify-content:center;height:100%;color:var(--txt2);gap:10px;}
 #empty .ico{font-size:52px;opacity:.25;}
 #empty p{font-size:13px;}
 
+/* Restantes */
 #tbl-rest{width:100%;border-collapse:collapse;font-size:11px;}
 #tbl-rest th{background:var(--blu);color:#fff;padding:5px 6px;font-size:10px;font-weight:600;}
 #tbl-rest td{padding:4px 6px;border-bottom:1px solid #EEF2F8;}
 
+/* Toast */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
   background:#1a2540;color:#fff;padding:10px 20px;border-radius:8px;
   font-size:13px;font-weight:500;opacity:0;transition:all .25s;
   pointer-events:none;z-index:999;max-width:420px;text-align:center;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* Upload progress overlay */
-#upload-progress{
-  display:none;position:absolute;inset:0;
-  background:rgba(31,73,125,.85);border-radius:8px;
-  flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  color:#fff;font-size:12px;font-weight:600;
-}
+/* Upload spinner */
+#upload-progress{display:none;position:absolute;inset:0;background:rgba(31,73,125,.85);
+  border-radius:8px;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;color:#fff;font-size:12px;font-weight:600;}
 #upload-progress.show{display:flex;}
-.up-spinner{width:28px;height:28px;border:3px solid rgba(255,255,255,.3);
+.up-spinner{width:26px;height:26px;border:3px solid rgba(255,255,255,.3);
   border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
@@ -203,7 +210,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
 <div id="hdr">
   <h1>⬡ Nesting 2D</h1>
-  <span class="badge">v2.3</span>
+  <span class="badge">v2.4</span>
   <div id="hdr-right">
     <button class="btn btn-ghost btn-sm" onclick="limpar()">↺ Limpar</button>
     <button class="btn btn-grn btn-sm" id="btn-baixar" disabled onclick="baixar()">
@@ -214,7 +221,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
 <div id="body">
 
-<!-- ══ ESQUERDO ══════════════════════════════════════════════ -->
+<!-- ══ ESQUERDO ═══════════════════════════════════════════════ -->
 <div class="panel">
   <div class="panel-hdr"><span>Configuração</span></div>
   <div class="panel-body">
@@ -226,18 +233,18 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
     <div class="sep"></div>
 
+    <!-- Modo — DXF como padrão -->
     <div class="fld">
       <label>Modo de entrada</label>
       <div class="tabs">
-        <button class="tab on" id="tab-rect" onclick="setModo('rect')">Retangular</button>
-        <button class="tab"   id="tab-poly" onclick="setModo('poly')">DXF (livre)</button>
+        <button class="tab on" id="tab-poly" onclick="setModo('poly')">DXF (livre)</button>
+        <button class="tab"   id="tab-rect" onclick="setModo('rect')">Retangular</button>
       </div>
     </div>
 
     <!-- ── BLOCO DXF ── -->
-    <div id="bloco-dxf" style="display:none;flex-direction:column;gap:8px;">
+    <div id="bloco-dxf" style="display:flex;flex-direction:column;gap:8px;">
 
-      <!-- Drop zone -->
       <div id="upload-zone" style="position:relative"
            ondragover="onDrag(event,true)" ondragleave="onDrag(event,false)"
            ondrop="onDrop(event)">
@@ -249,22 +256,26 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
         </div>
         <div class="uz-ico">📂</div>
         <div class="uz-txt">Arraste os DXFs aqui</div>
-        <div class="uz-sub">ou clique para selecionar • múltiplos arquivos aceitos</div>
+        <div class="uz-sub">ou clique para selecionar · múltiplos arquivos aceitos</div>
       </div>
 
-      <!-- Erros -->
       <div id="dxf-erros"></div>
 
-      <!-- Lista -->
+      <!-- Header da lista com contador e botão limpar tudo -->
+      <div class="dxf-list-hdr" id="dxf-list-hdr" style="display:none">
+        <span class="dxf-count" id="dxf-count"></span>
+        <button class="btn btn-red" onclick="limparDxfs()">✕ Limpar todos</button>
+      </div>
+
       <div id="dxf-vazio">Nenhum DXF carregado ainda.</div>
       <div id="dxf-lista"></div>
 
     </div>
 
     <!-- ── BLOCO RETANGULAR ── -->
-    <div id="bloco-rect">
+    <div id="bloco-rect" style="display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <span class="sec-lbl">PEÇAS</span>
+        <span class="sec-lbl">Peças</span>
         <button class="btn btn-ghost btn-sm" onclick="addPeca()">+ Adicionar</button>
       </div>
       <div style="overflow-x:auto">
@@ -280,16 +291,20 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
     </div>
 
     <div class="sep"></div>
-    <div class="sec-lbl">CHAPA</div>
-    <div class="g2">
+
+    <!-- Chapa -->
+    <div class="sec-lbl">Chapa</div>
+    <div class="g3">
       <div class="fld"><label>X (mm)</label>
         <input type="number" id="chapa_x" value="1200" min="1"></div>
       <div class="fld"><label>Y (mm)</label>
         <input type="number" id="chapa_y" value="2000" min="1"></div>
-      <div class="fld"><label>Gap (mm)</label>
-        <input type="number" id="gap" value="15" min="0" step=".5"></div>
       <div class="fld"><label>Espessura (mm)</label>
         <input type="number" id="espessura" value="1.5" min=".1" step=".1"></div>
+    </div>
+    <div class="g3">
+      <div class="fld"><label>Gap (mm)</label>
+        <input type="number" id="gap" value="15" min="0" step=".5"></div>
       <div class="fld"><label>Margem X (mm)</label>
         <input type="number" id="margem_x" value="40" min="0"></div>
       <div class="fld"><label>Margem Y (mm)</label>
@@ -297,7 +312,9 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
     </div>
 
     <div class="sep"></div>
-    <div class="sec-lbl">MATERIAL E CUSTO</div>
+
+    <!-- Matéria-prima — simplificado -->
+    <div class="sec-lbl">Matéria-prima</div>
     <div class="fld">
       <label>Material</label>
       <select id="material" onchange="setRho()">
@@ -310,19 +327,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
         <option data-rho="7850">Outro</option>
       </select>
     </div>
-    <div class="g2">
+    <div class="g3">
       <div class="fld"><label>ρ (kg/m³)</label>
         <input type="number" id="rho" value="7850"></div>
-      <div class="fld"><label>R$/kg</label>
+      <div class="fld" style="grid-column:span 2"><label>Preço (R$/kg)</label>
         <input type="number" id="preco_kg" value="4.00" step=".01"></div>
-      <div class="fld"><label>Pintura R$/m²</label>
-        <input type="number" id="pintura_m2" value="20" step=".01"></div>
-      <div class="fld"><label>% ICMS</label>
-        <input type="number" id="icms_pct" value="18" step=".01"></div>
-      <div class="fld"><label>% Outros imp.</label>
-        <input type="number" id="outros_pct" value="9.25" step=".01"></div>
-      <div class="fld"><label>% Lucro</label>
-        <input type="number" id="lucro_pct" value="30" step=".01"></div>
     </div>
 
     <div class="sep"></div>
@@ -351,7 +360,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
   <div id="svg-container">
     <div id="empty">
       <div class="ico">⬡</div>
-      <p>Configure as peças e clique em Calcular.</p>
+      <p>Carregue os DXFs e clique em Calcular.</p>
     </div>
     <svg id="main-svg" style="display:none"></svg>
   </div>
@@ -367,9 +376,9 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
     <div class="kpi-grid" id="kpi-grid" style="display:none">
       <div class="kpi"><div class="kv" id="kv-chapas">—</div><div class="kl">Chapas</div></div>
-      <div class="kpi"><div class="kv" id="kv-aprov">—</div><div class="kl">Aprov. médio</div></div>
-      <div class="kpi"><div class="kv" id="kv-aloc">—</div><div class="kl">Peças alocadas</div></div>
-      <div class="kpi dest"><div class="kv" id="kv-total">—</div><div class="kl">Total solicitado</div></div>
+      <div class="kpi"><div class="kv" id="kv-aprov">—</div><div class="kl">Aproveitamento</div></div>
+      <div class="kpi"><div class="kv" id="kv-peso">—</div><div class="kl">Peso total (kg)</div></div>
+      <div class="kpi dest"><div class="kv" id="kv-custo">—</div><div class="kl">Custo MP (R$)</div></div>
     </div>
 
     <div class="sep" id="sep-kpi" style="display:none"></div>
@@ -377,7 +386,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
     <div id="wrap-rest" style="display:none">
       <div class="sep"></div>
-      <div class="sec-lbl" style="margin-bottom:6px">PEÇAS POR TIPO</div>
+      <div class="sec-lbl" style="margin-bottom:6px">Peças por tipo</div>
       <table id="tbl-rest">
         <thead><tr>
           <th style="text-align:left">Peça</th>
@@ -398,20 +407,22 @@ const PALETA=['#4472C4','#ED7D31','#70AD47','#FF0000','#7030A0',
               '#00B0F0','#FFC000','#FF00FF','#00B050','#C00000',
               '#5B9BD5','#92D050','#833C00','#203864'];
 
-let _modo='rect', _pecasRect=[], _dxfPecas=[], _chapas=[];
+let _modo='poly', _pecasRect=[], _dxfPecas=[], _chapas=[];
 let _svgIdx=0, _polling=null, _zoom=1, _panX=0, _panY=0;
 let _isPanning=false, _pmx=0, _pmy=0, _pecaId=0;
 
-window.addEventListener('load', () => { addPeca(); initPan(); });
+window.addEventListener('load', () => { initPan(); });
 
 // ── Modo ──────────────────────────────────────────────────
 function setModo(m) {
   _modo = m;
-  document.getElementById('tab-rect').classList.toggle('on', m==='rect');
   document.getElementById('tab-poly').classList.toggle('on', m==='poly');
+  document.getElementById('tab-rect').classList.toggle('on', m==='rect');
   document.getElementById('bloco-dxf').style.display  = m==='poly' ? 'flex' : 'none';
   document.getElementById('bloco-rect').style.display = m==='rect' ? '' : 'none';
+  if (m==='rect' && !document.getElementById('tbody-pecas').children.length) addPeca();
 }
+
 function setRho() {
   const sel = document.getElementById('material');
   document.getElementById('rho').value = sel.options[sel.selectedIndex].dataset.rho || 7850;
@@ -436,20 +447,16 @@ async function uploadFiles(files) {
   const dxfs = files.filter(f => f.name.toLowerCase().endsWith('.dxf'));
   if (!dxfs.length) { toast('Selecione arquivos .dxf'); return; }
 
-  // Mostrar spinner
   const prog = document.getElementById('upload-progress');
-  const progTxt = document.getElementById('up-prog-txt');
+  document.getElementById('up-prog-txt').textContent = `Lendo ${dxfs.length} DXF(s)...`;
   prog.classList.add('show');
-  progTxt.textContent = `Lendo ${dxfs.length} DXF(s)...`;
 
   try {
     const fd = new FormData();
     dxfs.forEach(f => fd.append('dxfs', f));
-
     const r = await fetch('/api/upload_dxf', { method: 'POST', body: fd });
     const d = await r.json();
 
-    // Erros de parse
     const errosEl = document.getElementById('dxf-erros');
     errosEl.innerHTML = '';
     (d.erros || []).forEach(e => {
@@ -459,11 +466,9 @@ async function uploadFiles(files) {
       errosEl.appendChild(div);
     });
 
-    // Adicionar peças à lista (preservar qtd/rotação existentes)
     (d.pecas || []).forEach((p, i) => {
       const existe = _dxfPecas.findIndex(x => x.nome === p.nome);
       if (existe >= 0) {
-        // Atualiza dimensões mas preserva qtd e rotação
         _dxfPecas[existe] = { ..._dxfPecas[existe], ...p };
       } else {
         _dxfPecas.push({ ...p, qtd: 1, rotacao: true,
@@ -474,17 +479,21 @@ async function uploadFiles(files) {
     renderDxfLista();
     if (d.pecas?.length) toast(`${d.pecas.length} DXF(s) carregado(s) ✓`);
   } catch(e) {
-    toast('Erro ao enviar arquivos: ' + e.message, 4000);
+    toast('Erro: ' + e.message, 4000);
   } finally {
     prog.classList.remove('show');
   }
 }
 
 function renderDxfLista() {
-  const lista = document.getElementById('dxf-lista');
-  const vazio = document.getElementById('dxf-vazio');
+  const lista  = document.getElementById('dxf-lista');
+  const vazio  = document.getElementById('dxf-vazio');
+  const hdr    = document.getElementById('dxf-list-hdr');
+  const count  = document.getElementById('dxf-count');
   lista.innerHTML = '';
   vazio.style.display = _dxfPecas.length ? 'none' : 'block';
+  hdr.style.display   = _dxfPecas.length ? 'flex' : 'none';
+  count.textContent   = `${_dxfPecas.length} peça(s) carregada(s)`;
 
   _dxfPecas.forEach((p, i) => {
     const div = document.createElement('div');
@@ -517,9 +526,21 @@ async function removerDxf(i) {
     body: JSON.stringify({ nome }),
   });
   _dxfPecas.splice(i, 1);
-  // Recolorir
   _dxfPecas.forEach((p, j) => p.cor = PALETA[j % PALETA.length]);
   renderDxfLista();
+}
+
+async function limparDxfs() {
+  for (const p of _dxfPecas) {
+    await fetch('/api/remover_dxf', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: p.arquivo }),
+    });
+  }
+  _dxfPecas = [];
+  document.getElementById('dxf-erros').innerHTML = '';
+  renderDxfLista();
+  toast('Todos os DXFs removidos.');
 }
 
 // ── Peças retangulares ────────────────────────────────────
@@ -532,13 +553,13 @@ function addPeca(nome='', l='', a='', qtd=1, rot=true) {
   tr.innerHTML = `
     <td><span class="cor-dot" style="background:${cor}"></span></td>
     <td><input type="text" value="${nome}" placeholder="Nome"
-         oninput="updPeca(${id},'nome',this.value)" style="width:65px"></td>
+         oninput="updPeca(${id},'nome',this.value)" style="width:72px"></td>
     <td><input type="number" value="${l}" placeholder="mm" min="1"
-         oninput="updPeca(${id},'largura',this.value)" style="width:48px"></td>
+         oninput="updPeca(${id},'largura',this.value)" style="width:54px"></td>
     <td><input type="number" value="${a}" placeholder="mm" min="1"
-         oninput="updPeca(${id},'altura',this.value)" style="width:48px"></td>
+         oninput="updPeca(${id},'altura',this.value)" style="width:54px"></td>
     <td><input type="number" value="${qtd}" min="1"
-         oninput="updPeca(${id},'quantidade',this.value)" style="width:38px"></td>
+         oninput="updPeca(${id},'quantidade',this.value)" style="width:44px"></td>
     <td style="text-align:center">
       <input type="checkbox" ${rot?'checked':''}
              onchange="updPeca(${id},'rotacao',this.checked)">
@@ -575,9 +596,8 @@ async function calcular() {
     gap: val('gap'), espessura: val('espessura'),
     margem_x: val('margem_x'), margem_y: val('margem_y'),
     material: val('material'), rho: val('rho'),
-    preco_kg: val('preco_kg'), pintura_m2: val('pintura_m2'),
-    icms_pct: val('icms_pct'), outros_pct: val('outros_pct'),
-    lucro_pct: val('lucro_pct'), pecas,
+    preco_kg: val('preco_kg'),
+    pecas,
   };
 
   const r = await fetch('/api/rodar', {
@@ -605,7 +625,8 @@ async function verificar() {
     document.getElementById('prog-fill').classList.add('done');
     document.getElementById('btn-calc').disabled   = false;
     document.getElementById('btn-baixar').disabled = false;
-    await carregarChapas(); mostrarResumo(d.resumo);
+    await carregarChapas();
+    mostrarResumo(d.resumo);
     toast('Nesting concluído ✓');
   } else if (d.status === 'erro') {
     clearInterval(_polling);
@@ -648,8 +669,18 @@ function mostrarResumo(r) {
   ['kpi-grid','sep-kpi'].forEach(id => document.getElementById(id).style.display='');
   document.getElementById('kv-chapas').textContent = r.n_chapas;
   document.getElementById('kv-aprov').textContent  = r.aprov;
-  document.getElementById('kv-aloc').textContent   = `${r.n_aloc}/${r.n_total}`;
-  document.getElementById('kv-total').textContent  = r.n_total;
+
+  // Calcular peso e custo localmente com os campos preenchidos
+  const rho      = parseFloat(document.getElementById('rho').value)      || 7850;
+  const esp      = parseFloat(document.getElementById('espessura').value) || 1.5;
+  const cw       = parseFloat(document.getElementById('chapa_x').value)  || 1200;
+  const ch       = parseFloat(document.getElementById('chapa_y').value)  || 2000;
+  const preco_kg = parseFloat(document.getElementById('preco_kg').value) || 0;
+  const massa    = (cw/1000)*(ch/1000)*(esp/1000)*rho * r.n_chapas;
+  const custo    = massa * preco_kg;
+
+  document.getElementById('kv-peso').textContent  = massa.toFixed(1) + ' kg';
+  document.getElementById('kv-custo').textContent = 'R$ ' + custo.toFixed(2);
 
   const src  = _modo==='rect' ? _pecasRect
                : _dxfPecas.map(p => ({nome:p.nome, quantidade:p.qtd}));
@@ -795,6 +826,7 @@ function darken(hex,f=0.6){
   const p=o=>Math.round(parseInt(hex.slice(o,o+2),16)/255*f*255).toString(16).padStart(2,'0');
   return `#${p(1)}${p(3)}${p(5)}`;
 }
+
 function limpar(){
   _chapas=[];_svgIdx=0;
   document.getElementById('layout-list').innerHTML='';
@@ -808,9 +840,11 @@ function limpar(){
   document.getElementById('progress-wrap').style.display='none';
   document.getElementById('btn-baixar').disabled=true;
 }
-function baixar(){window.location.href='/api/baixar';}
+
+function baixar(){ window.location.href='/api/baixar'; }
+
 let _toastT;
-function toast(msg,dur=3000){
+function toast(msg, dur=3000){
   const el=document.getElementById('toast');
   el.textContent=msg; el.classList.add('show');
   clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove('show'),dur);

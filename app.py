@@ -112,14 +112,10 @@ def _executar(dados):
         config = {
             'nome': nome, 'sheet_w': sheet_w, 'sheet_h': sheet_h,
             'gap': gap, 'margin_x': mx, 'margin_y': my,
-            'material':   dados.get('material', ''),
-            'espessura':  float(dados.get('espessura', 1.5)),
-            'rho':        float(dados.get('rho', 7850)),
-            'preco_kg':   float(dados.get('preco_kg', 0)),
-            'pintura_m2': float(dados.get('pintura_m2', 0)),
-            'icms_pct':   float(dados.get('icms_pct', 18)),
-            'outros_pct': float(dados.get('outros_pct', 9.25)),
-            'lucro_pct':  float(dados.get('lucro_pct', 30)),
+            'material':  dados.get('material', ''),
+            'espessura': float(dados.get('espessura', 1.5)),
+            'rho':       float(dados.get('rho', 7850)),
+            'preco_kg':  float(dados.get('preco_kg', 0)),
         }
 
         peca_cfg = {p['nome']: p for p in dados.get('pecas', [])}
