@@ -444,9 +444,46 @@ def _resolve_layers(all_layers):
     return all_layers, set()
 
 
+def _polygonize_robust(lines, tolerance=0.01):
+    """
+    Tenta poligonizar uma lista de segmentos com tolerância progressiva.
+    Aplica snap para fechar gaps numéricos pequenos (ex: 0.001mm do Inventor).
+    """
+    from shapely.ops import polygonize, unary_union, snap
+    from shapely.geometry import MultiLineString
+
+    # Tentativa 1: direto
+    polys = list(polygonize(lines))
+    if polys:
+        return polys
+
+    # Tentativa 2: unary_union primeiro
+    merged = unary_union(lines)
+    polys = list(polygonize(merged))
+    if polys:
+        return polys
+
+    # Tentativa 3: snap com tolerância crescente
+    for tol in (tolerance, tolerance*10, tolerance*100):
+        try:
+            ml = MultiLineString([list(l.coords) for l in lines if l.length > 0])
+            snapped = snap(ml, ml, tol)
+            polys = list(polygonize(snapped))
+            if polys:
+                return polys
+            # também tentar após unary_union
+            merged2 = unary_union(snapped)
+            polys = list(polygonize(merged2))
+            if polys:
+                return polys
+        except Exception:
+            continue
+
+    return []
+
+
 def parse_dxf(filepath: str) -> dict:
     import ezdxf
-    from shapely.ops import polygonize, unary_union
     from shapely import affinity
 
     doc = ezdxf.readfile(filepath)
@@ -460,12 +497,9 @@ def parse_dxf(filepath: str) -> dict:
     if not lines_outer:
         raise ValueError(f'Nenhuma geometria encontrada nos layers: {outer_layers}')
 
-    polys = list(polygonize(lines_outer))
+    polys = _polygonize_robust(lines_outer)
     if not polys:
-        merged = unary_union(lines_outer)
-        polys  = list(polygonize(merged))
-    if not polys:
-        raise ValueError('Não foi possível reconstruir o polígono. ' 
+        raise ValueError('Não foi possível reconstruir o polígono. '
                          'Verifique se o contorno está fechado.')
 
     polys.sort(key=lambda p: p.area, reverse=True)
@@ -476,13 +510,9 @@ def parse_dxf(filepath: str) -> dict:
     if hole_layers:
         lines_holes = _collect_lines(msp, layer_filter=hole_layers)
         if lines_holes:
-            hole_polys = list(polygonize(lines_holes))
-            if not hole_polys:
-                merged_h = unary_union(lines_holes)
-                hole_polys = list(polygonize(merged_h))
+            hole_polys = _polygonize_robust(lines_holes)
             holes = [p for p in hole_polys if p.area > 0.5]
     else:
-        # Sem layer dedicado: furos são polígonos menores contidos no outer
         holes = [p for p in polys[1:] if p.area > 0.5 and outer.contains(p)]
 
     # Normalizar para origem
