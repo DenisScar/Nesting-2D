@@ -1,4 +1,4 @@
- # Nesting 2D v2.0
+# Nesting 2D v2.0
 
 Ferramenta web local para otimização de corte de chapas.
 Interface com três painéis: configuração, visualização SVG interativa e lista de layouts.

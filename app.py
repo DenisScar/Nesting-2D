@@ -1,7 +1,5 @@
 """
-app.py  —  Nesting 2D v2.3
-DXFs enviados via upload na interface (multipart).
-Sem dependência de pasta input/ no servidor.
+app.py  —  Nesting 2D v3.0
 """
 
 import os, io, threading, webbrowser, tempfile
@@ -20,7 +18,7 @@ OUTPUT.mkdir(parents=True, exist_ok=True)
 _job = {'status': 'idle', 'progresso': '', 'resultado': None,
         'erro': None, 'chapas': [], 'resumo': {}}
 
-# DXFs da sessão atual: {nome: bytes}
+# DXFs da sessão: {nome: {'bytes': bytes, 'info': dict}}
 _dxf_store = {}
 
 
@@ -31,7 +29,6 @@ def index():
 
 @app.route('/api/upload_dxf', methods=['POST'])
 def upload_dxf():
-    """Recebe DXFs, lê dimensões e armazena em memória."""
     arquivos = request.files.getlist('dxfs')
     if not arquivos:
         return jsonify({'erro': 'Nenhum arquivo recebido.'}), 400
@@ -45,13 +42,15 @@ def upload_dxf():
         try:
             data = f.read()
             info = parse_dxf_bytes(nome, data)
-            _dxf_store[nome] = data
+            _dxf_store[nome] = {'bytes': data, 'info': info}
             pecas.append({
-                'nome':    info['nome'],
-                'arquivo': nome,
-                'largura': round(info['width'],    1),
-                'altura':  round(info['height'],   1),
-                'area':    round(info['area_real'], 1),
+                'nome':        info['nome'],
+                'arquivo':     nome,
+                'largura':     round(info['width'],    1),
+                'altura':      round(info['height'],   1),
+                'area':        round(info['area_real'], 1),
+                'poly_coords': info.get('poly_coords', []),
+                'hole_coords': info.get('hole_coords', []),
             })
         except Exception as e:
             erros.append({'arquivo': nome, 'erro': str(e)})
@@ -102,7 +101,7 @@ def _executar(dados):
     global _job
     try:
         nome    = dados.get('nome_projeto', 'Projeto').strip() or 'Projeto'
-        modo    = dados.get('modo', 'rect')
+        modo    = dados.get('modo', 'poly')
         sheet_w = float(dados['chapa_x'])
         sheet_h = float(dados['chapa_y'])
         gap     = float(dados['gap'])
@@ -123,26 +122,27 @@ def _executar(dados):
 
         if modo == 'poly':
             if not _dxf_store:
-                raise ValueError('Nenhum DXF carregado. '
-                                  'Arraste os arquivos .dxf para a área de upload.')
-            arqs = list(_dxf_store.items())
-            for i, (arq_nome, arq_bytes) in enumerate(arqs):
-                _job['progresso'] = f'Lendo DXF {i+1}/{len(arqs)}: {arq_nome}'
-                info = parse_dxf_bytes(arq_nome, arq_bytes)
+                raise ValueError('Nenhum DXF carregado.')
+
+            for i, (arq_nome, entry) in enumerate(_dxf_store.items()):
+                _job['progresso'] = f'Preparando peça {i+1}/{len(_dxf_store)}: {arq_nome}'
+                info = entry['info']
                 cfg  = peca_cfg.get(info['nome'], {})
                 qtd  = int(cfg.get('quantidade', 1))
-                rot  = bool(cfg.get('rotacao', True))
+                ang  = float(cfg.get('angulo_max', 360))
+
                 pecas.append(Peca(
                     id=info['nome'], nome=info['nome'],
                     largura=info['width'], altura=info['height'],
                     area_real=info['area_real'],
-                    quantidade=qtd, rotacao=rot,
+                    quantidade=qtd, angulo_max=ang,
                     polygon=info['polygon'],
+                    holes=info.get('holes', []),
                 ))
                 pecas_export.append({
-                    'nome': info['nome'],
-                    'largura': round(info['width'], 1),
-                    'altura':  round(info['height'], 1),
+                    'nome':       info['nome'],
+                    'largura':    round(info['width'], 1),
+                    'altura':     round(info['height'], 1),
                     'quantidade': qtd, 'cor': '',
                 })
         else:
@@ -155,9 +155,9 @@ def _executar(dados):
                     rotacao=bool(pc.get('rotacao', True)),
                 ))
                 pecas_export.append({
-                    'nome': pc['nome'],
-                    'largura': float(pc['largura']),
-                    'altura':  float(pc['altura']),
+                    'nome':       pc['nome'],
+                    'largura':    float(pc['largura']),
+                    'altura':     float(pc['altura']),
                     'quantidade': int(pc['quantidade']), 'cor': '',
                 })
 
@@ -207,7 +207,7 @@ if __name__ == '__main__':
         import time; time.sleep(1.2)
         webbrowser.open('http://localhost:5000')
     threading.Thread(target=_open, daemon=True).start()
-    print('\n' + '─' * 50)
-    print('  Nesting 2D  →  http://localhost:5000')
-    print('─' * 50 + '\n')
+    print('\n' + '─'*50)
+    print('  Nesting 2D v3.0  →  http://localhost:5000')
+    print('─'*50 + '\n')
     app.run(debug=False, port=5000, use_reloader=False)
