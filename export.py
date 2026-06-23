@@ -424,7 +424,42 @@ def gerar(chapas_dict, pecas_cfg, config, output_path):
             ]))
             st += [rb, Spacer(1, 2*mm)]
 
-        # ← Tabela de peças por chapa REMOVIDA (estava duplicada)
+        # Tabela de peças desta chapa
+        st.append(_shdr('PEÇAS NESTA CHAPA', s, tw))
+        st.append(Spacer(1, 1*mm))
+
+        hdr2 = [Paragraph(t, s['b']) for t in [
+            '#', 'Peça', 'L × A (mm)', 'Pos. X (mm)', 'Pos. Y (mm)',
+            'Ângulo', 'Rec. internos', 'Comp. corte',
+        ]]
+        rows2 = [hdr2]
+        for j, p in enumerate(sorted(chapa['pecas'],
+                                      key=lambda x: x['w']*x['h'], reverse=True)):
+            rows2.append([
+                Paragraph(str(j+1),                        s['sm']),
+                Paragraph(p['nome'],                       s['n']),
+                Paragraph(f"{p['w']:.1f} × {p['h']:.1f}", s['sm']),
+                Paragraph(f"{p['x']:.1f}",                 s['sm']),
+                Paragraph(f"{p['y']:.1f}",                 s['sm']),
+                Paragraph(f"{p.get('angulo', 0):.0f}°",    s['sm']),
+                Paragraph(str(_n_internos(p)),             s['sm']),
+                Paragraph(f"{_cut_mm(p)/1000:.3f} m",      s['sm']),
+            ])
+
+        cw2 = [tw*f for f in (.04, .28, .14, .11, .11, .09, .11, .12)]
+        lt2 = Table(rows2, colWidths=cw2, repeatRows=1)
+        lt2.setStyle(TableStyle([
+            ('FONTSIZE',       (0,0), (-1,-1), 7.5),
+            ('GRID',           (0,0), (-1,-1), 0.3, GRAY_M),
+            ('BACKGROUND',     (0,0), (-1, 0), BLU_D),
+            ('TEXTCOLOR',      (0,0), (-1, 0), WHITE),
+            ('ALIGN',          (2,0), (-1,-1), 'CENTER'),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [BLU_L, WHITE]),
+            ('TOPPADDING',     (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING',  (0,0), (-1,-1), 3),
+            ('LEFTPADDING',    (0,0), (-1,-1), 4),
+        ]))
+        st.append(lt2)
 
     # Rodapé
     def _footer(canvas, doc):
