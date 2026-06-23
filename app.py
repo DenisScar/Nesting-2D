@@ -94,7 +94,8 @@ def baixar():
     if not p or not os.path.exists(p):
         return 'Arquivo não encontrado', 404
     return send_file(p, as_attachment=True,
-                     download_name=os.path.basename(p))
+                     download_name=os.path.basename(p),
+                     mimetype='application/pdf')
 
 
 def _executar(dados):
@@ -176,7 +177,7 @@ def _executar(dados):
         chapas_dict = [c.to_dict() for c in chapas]
         _job['chapas'] = chapas_dict
 
-        out_file = OUTPUT / f'nesting_{nome.replace(" ", "_")}.xlsx'
+        out_file = OUTPUT / f'nesting_{nome.replace(" ", "_")}.pdf'
         export.gerar(chapas_dict, pecas_export, config, str(out_file))
 
         n_aloc = sum(len(c.pecas) for c in chapas)
