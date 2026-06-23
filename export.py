@@ -1,12 +1,11 @@
 """
-export.py  —  Nesting 2D v3.4
-Relatório PDF:
-  - KPIs: chapas, aproveitamento, peso, custo MP
-  - Parâmetros da chapa
-  - Lista de peças ordenada por área (L×A, área, cortes, comp. corte, qtd)
-  - Uma página por chapa com layout visual (polígonos reais + furos)
-  - Identificação de sobra reaproveitável (remnant)
-  - Rodapé com paginação
+export.py  —  Nesting 2D v3.5
+Correções:
+  - Título e nome do projeto separados visualmente (sem sobreposição)
+  - Espessura adicionada aos parâmetros
+  - "Cortes" renomeado para "Rec. internos"
+  - Tabela de peças por chapa REMOVIDA (estava duplicada)
+  - Sobra reaproveitável mantida em todas as chapas quando detectável
 """
 
 import io, math
@@ -68,13 +67,18 @@ def _cut_mm(p):
     return t or 2*(p.get('w', 0)+p.get('h', 0))
 
 
-def _n_cuts(p):
-    return 1 + len(p.get('hole_coords', []))
+def _n_internos(p):
+    """Número de recortes internos (furos). Não conta o contorno externo."""
+    return len(p.get('hole_coords', []))
 
 
 # ── Remnant ───────────────────────────────────────────────────────
 
 def _remnant(sw, sh, pecas, mx, my):
+    """
+    Identifica a maior sobra retangular na chapa.
+    Retorna (w, h) ou None. Presente sempre que sobra > 20mm.
+    """
     if not pecas:
         return None
     max_x = max(p['x']+p['w'] for p in pecas)
@@ -157,22 +161,26 @@ def _S():
     def ps(name, **kw):
         return ParagraphStyle(name, **kw)
     return {
-        'h1':  ps('h1', fontSize=18, textColor=BLU_D, fontName='Helvetica-Bold',
-                  alignment=1, spaceAfter=3),
-        'h2':  ps('h2', fontSize=11, textColor=BLU_M, fontName='Helvetica',
-                  alignment=1, spaceAfter=2),
-        'dt':  ps('dt', fontSize=8, textColor=colors.gray,
-                  fontName='Helvetica', alignment=1),
-        'sec': ps('sec', fontSize=9, textColor=WHITE,
-                  fontName='Helvetica-Bold', leftIndent=6, leading=13),
-        'n':   ps('n',  fontSize=8.5, fontName='Helvetica', leading=12),
-        'sm':  ps('sm', fontSize=7.5, fontName='Helvetica', leading=10,
-                  textColor=colors.HexColor('#333333')),
-        'b':   ps('b',  fontSize=8.5, fontName='Helvetica-Bold', leading=12),
-        'kv':  ps('kv', fontSize=15, fontName='Helvetica-Bold',
-                  textColor=BLU_D, alignment=1),
-        'kl':  ps('kl', fontSize=7, fontName='Helvetica',
-                  textColor=colors.HexColor('#5A6A8A'), alignment=1),
+        # Capa — título e nome bem separados
+        'h1':   ps('h1',  fontSize=20, textColor=BLU_D, fontName='Helvetica-Bold',
+                   alignment=1, spaceAfter=0),
+        'proj': ps('proj',fontSize=13, textColor=BLU_M, fontName='Helvetica-Bold',
+                   alignment=1, spaceBefore=6, spaceAfter=0),
+        'dt':   ps('dt',  fontSize=8,  textColor=colors.gray,
+                   fontName='Helvetica', alignment=1, spaceBefore=4),
+        # Seções
+        'sec':  ps('sec', fontSize=9,  textColor=WHITE,
+                   fontName='Helvetica-Bold', leftIndent=6, leading=13),
+        # Corpo
+        'n':    ps('n',   fontSize=8.5, fontName='Helvetica', leading=12),
+        'sm':   ps('sm',  fontSize=7.5, fontName='Helvetica', leading=10,
+                   textColor=colors.HexColor('#333333')),
+        'b':    ps('b',   fontSize=8.5, fontName='Helvetica-Bold', leading=12),
+        # KPIs
+        'kv':   ps('kv',  fontSize=15, fontName='Helvetica-Bold',
+                   textColor=BLU_D, alignment=1),
+        'kl':   ps('kl',  fontSize=7,  fontName='Helvetica',
+                   textColor=colors.HexColor('#5A6A8A'), alignment=1),
     }
 
 
@@ -198,8 +206,8 @@ def _kpis(items, s, tw):
         ('BOX',        (0,0), (-1,-1), 0.5, BLU_M),
         ('INNERGRID',  (0,0), (-1,-1), 0.3, BLU_M),
         ('ALIGN',      (0,0), (-1,-1), 'CENTER'),
-        ('TOPPADDING',    (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING',    (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
     ]))
     return t
 
@@ -219,8 +227,9 @@ def gerar(chapas_dict, pecas_cfg, config, output_path):
     )
     s  = _S()
     st = []
-    sw = config.get('sheet_w', 1200)
-    sh = config.get('sheet_h', 2000)
+
+    sw    = config.get('sheet_w', 1200)
+    sh    = config.get('sheet_h', 2000)
     esp   = config.get('espessura', 1.5)
     rho   = config.get('rho', 7850)
     pkg   = config.get('preco_kg', 0)
@@ -230,195 +239,236 @@ def gerar(chapas_dict, pecas_cfg, config, output_path):
     aprov = (sum(c['aproveitamento'] for c in chapas_dict)/nc if nc else 0)
     massa = (sw/1000)*(sh/1000)*(esp/1000)*rho*nc
     custo = massa*pkg
-    nome_p  = config.get('nome', '')
+    nome_p   = config.get('nome', '')
     datahora = datetime.now().strftime('%d/%m/%Y  %H:%M')
 
-    # Capa
-    st += [Spacer(1, 6*mm),
-           Paragraph('RELATÓRIO DE NESTING', s['h1']),
-           Paragraph(nome_p, s['h2']),
-           Paragraph(datahora, s['dt']),
-           Spacer(1, 4*mm),
-           HRFlowable(width='100%', thickness=1.5, color=BLU_M),
-           Spacer(1, 4*mm)]
+    # ── CAPA ─────────────────────────────────────────────────────
+    # Título e nome bem separados — linha horizontal entre eles
+    st += [
+        Spacer(1, 10*mm),
+        Paragraph('RELATÓRIO DE NESTING', s['h1']),
+        Spacer(1, 3*mm),
+        HRFlowable(width='60%', thickness=1, color=BLU_M, hAlign='CENTER'),
+        Spacer(1, 3*mm),
+        Paragraph(nome_p, s['proj']),
+        Paragraph(datahora, s['dt']),
+        Spacer(1, 6*mm),
+        HRFlowable(width='100%', thickness=1.5, color=BLU_M),
+        Spacer(1, 5*mm),
+    ]
 
-    kl = [(nc,'Chapas'),(f'{aprov:.1f}%','Aproveitamento médio'),
-          (f'{massa:.1f} kg','Peso total (chapas)')]
+    # KPIs
+    kl = [
+        (nc,               'Chapas'),
+        (f'{aprov:.1f}%',  'Aproveitamento médio'),
+        (f'{massa:.1f} kg','Peso total (chapas)'),
+    ]
     if pkg:
-        kl.append((f'R$ {custo:.2f}','Custo MP'))
+        kl.append((f'R$ {custo:.2f}', 'Custo MP'))
     st.append(_kpis(kl, s, tw))
     st.append(Spacer(1, 5*mm))
 
-    # Parâmetros
+    # ── PARÂMETROS ───────────────────────────────────────────────
     st.append(_shdr('PARÂMETROS', s, tw))
     st.append(Spacer(1, 1*mm))
     pd_ = [
-        ['Material', config.get('material','—'), 'Chapa (mm)', f'{sw:.0f} × {sh:.0f}'],
-        ['Espessura (mm)', str(esp), 'Gap (mm)', str(config.get('gap',0))],
-        ['Margem X / Y (mm)', f'{mx} / {my}', 'Densidade (kg/m³)', str(rho)],
-        ['Preço MP (R$/kg)', f'{pkg:.2f}' if pkg else '—', '', ''],
+        ['Material',         config.get('material','—'),
+         'Chapa X × Y (mm)', f'{sw:.0f} × {sh:.0f}'],
+        ['Espessura (mm)',    f'{esp}',          # ← corrigido
+         'Gap (mm)',          str(config.get('gap', 0))],
+        ['Margem X / Y (mm)', f'{mx} / {my}',
+         'Densidade (kg/m³)', str(rho)],
+        ['Preço MP (R$/kg)',  f'{pkg:.2f}' if pkg else '—',
+         '', ''],
     ]
-    cw_p = [tw*f for f in (.18,.32,.18,.32)]
+    cw_p = [tw*f for f in (.20, .30, .20, .30)]
     pt = Table(pd_, colWidths=cw_p)
     pt.setStyle(TableStyle([
-        ('FONTNAME',   (0,0),(-1,-1),'Helvetica'),
-        ('FONTSIZE',   (0,0),(-1,-1),8),
-        ('FONTNAME',   (0,0),(0,-1),'Helvetica-Bold'),
-        ('FONTNAME',   (2,0),(2,-1),'Helvetica-Bold'),
-        ('BACKGROUND', (0,0),(0,-1),BLU_L),
-        ('BACKGROUND', (2,0),(2,-1),BLU_L),
-        ('GRID',       (0,0),(-1,-1),0.3,GRAY_M),
-        ('TOPPADDING',    (0,0),(-1,-1),3),
-        ('BOTTOMPADDING', (0,0),(-1,-1),3),
-        ('LEFTPADDING',   (0,0),(-1,-1),6),
+        ('FONTNAME',      (0,0), (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,0), (-1,-1), 8),
+        ('FONTNAME',      (0,0), (0,-1),  'Helvetica-Bold'),
+        ('FONTNAME',      (2,0), (2,-1),  'Helvetica-Bold'),
+        ('BACKGROUND',    (0,0), (0,-1),  BLU_L),
+        ('BACKGROUND',    (2,0), (2,-1),  BLU_L),
+        ('GRID',          (0,0), (-1,-1), 0.3, GRAY_M),
+        ('TOPPADDING',    (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('LEFTPADDING',   (0,0), (-1,-1), 6),
     ]))
     st += [pt, Spacer(1, 5*mm)]
 
-    # Lista de peças
+    # ── LISTA DE PEÇAS ────────────────────────────────────────────
     st.append(_shdr('LISTA DE PEÇAS', s, tw))
     st.append(Spacer(1, 1*mm))
 
+    # Agregar de todas as chapas
     pi = {}
     for chapa in chapas_dict:
         for p in chapa['pecas']:
             nm = p['nome']
             if nm not in pi:
-                pi[nm] = {'w':p['w'],'h':p['h'],'area':p['w']*p['h'],
-                           'cut1':_cut_mm(p),'ncut':_n_cuts(p),
-                           'qtd':0,'cor':p['cor']}
+                pi[nm] = {
+                    'w': p['w'], 'h': p['h'],
+                    'area': p['w']*p['h'],
+                    'cut1': _cut_mm(p),
+                    'nint': _n_internos(p),   # rec. internos
+                    'qtd':  0,
+                    'cor':  p['cor'],
+                }
             pi[nm]['qtd'] += 1
 
+    # Ordenar por área decrescente
     pord = sorted(pi.items(), key=lambda x: x[1]['area'], reverse=True)
-    hdr = [Paragraph(t, s['b']) for t in
-           ['#','Peça','L × A (mm)','Área (m²)','Cortes','Comp./unid.','Comp. total','Qtd.']]
+
+    hdr = [Paragraph(t, s['b']) for t in [
+        '#', 'Peça', 'L × A (mm)', 'Área (m²)',
+        'Rec. internos',            # ← renomeado
+        'Comp./unid.', 'Comp. total', 'Qtd.',
+    ]]
     rows = [hdr]
     tot_cut = 0.0
 
-    for i,(nm,info) in enumerate(pord):
-        cu = info['cut1']/1000
-        ct = cu*info['qtd']
+    for i, (nm, info) in enumerate(pord):
+        cu = info['cut1'] / 1000
+        ct = cu * info['qtd']
         tot_cut += ct
         rows.append([
-            Paragraph(str(i+1), s['sm']),
-            Paragraph(nm, s['n']),
+            Paragraph(str(i+1),                              s['sm']),
+            Paragraph(nm,                                    s['n']),
             Paragraph(f"{info['w']:.1f} × {info['h']:.1f}", s['sm']),
-            Paragraph(f"{info['w']*info['h']/1e6:.4f}", s['sm']),
-            Paragraph(str(info['ncut']), s['sm']),
-            Paragraph(f"{cu:.3f} m", s['sm']),
-            Paragraph(f"{ct:.3f} m", s['sm']),
-            Paragraph(str(info['qtd']), s['sm']),
+            Paragraph(f"{info['w']*info['h']/1e6:.4f}",     s['sm']),
+            Paragraph(str(info['nint']),                     s['sm']),
+            Paragraph(f"{cu:.3f} m",                         s['sm']),
+            Paragraph(f"{ct:.3f} m",                         s['sm']),
+            Paragraph(str(info['qtd']),                      s['sm']),
         ])
 
+    # Linha de totais
     rows.append([
-        Paragraph('', s['b']),
-        Paragraph('TOTAL', s['b']),
-        Paragraph('', s['b']),
-        Paragraph('', s['b']),
-        Paragraph('', s['b']),
-        Paragraph('', s['b']),
-        Paragraph(f"{tot_cut:.3f} m", s['b']),
-        Paragraph(str(sum(i['qtd'] for _,i in pord)), s['b']),
+        Paragraph('',                                              s['b']),
+        Paragraph('TOTAL',                                         s['b']),
+        Paragraph('',                                              s['b']),
+        Paragraph('',                                              s['b']),
+        Paragraph('',                                              s['b']),
+        Paragraph('',                                              s['b']),
+        Paragraph(f"{tot_cut:.3f} m",                             s['b']),
+        Paragraph(str(sum(i['qtd'] for _, i in pord)),            s['b']),
     ])
 
-    cw_l = [tw*f for f in (.04,.24,.14,.10,.08,.13,.13,.07)]
+    cw_l = [tw*f for f in (.04, .24, .14, .10, .10, .13, .13, .07)]
     lt = Table(rows, colWidths=cw_l, repeatRows=1)
     lt.setStyle(TableStyle([
-        ('FONTSIZE',   (0,0),(-1,-1),7.5),
-        ('GRID',       (0,0),(-1,-1),0.3,GRAY_M),
-        ('BACKGROUND', (0,0),(-1,0),BLU_D),
-        ('TEXTCOLOR',  (0,0),(-1,0),WHITE),
-        ('BACKGROUND', (0,-1),(-1,-1),GRN_L),
-        ('FONTNAME',   (0,-1),(-1,-1),'Helvetica-Bold'),
-        ('ALIGN',      (2,0),(-1,-1),'CENTER'),
-        ('ROWBACKGROUNDS',(0,1),(-1,-2),[BLU_L,WHITE]),
-        ('TOPPADDING',    (0,0),(-1,-1),3),
-        ('BOTTOMPADDING', (0,0),(-1,-1),3),
-        ('LEFTPADDING',   (0,0),(-1,-1),4),
+        ('FONTSIZE',       (0,0), (-1,-1), 7.5),
+        ('GRID',           (0,0), (-1,-1), 0.3, GRAY_M),
+        ('BACKGROUND',     (0,0), (-1, 0), BLU_D),
+        ('TEXTCOLOR',      (0,0), (-1, 0), WHITE),
+        ('BACKGROUND',     (0,-1),(-1,-1), GRN_L),
+        ('FONTNAME',       (0,-1),(-1,-1), 'Helvetica-Bold'),
+        ('ALIGN',          (2,0), (-1,-1), 'CENTER'),
+        ('ROWBACKGROUNDS', (0,1), (-1,-2), [BLU_L, WHITE]),
+        ('TOPPADDING',     (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING',  (0,0), (-1,-1), 3),
+        ('LEFTPADDING',    (0,0), (-1,-1), 4),
     ]))
     st += [lt, Spacer(1, 2*mm)]
 
+    # Caixa de resumo de corte
     rc = Table([[
         Paragraph(f'Comprimento total de corte: <b>{tot_cut:.3f} m</b>', s['n']),
-        Paragraph(f'Tipos de peça: <b>{len(pord)}</b>', s['n']),
+        Paragraph(f'Tipos de peça: <b>{len(pord)}</b>',                  s['n']),
         Paragraph(f'Total de peças: <b>{sum(i["qtd"] for _,i in pord)}</b>', s['n']),
     ]], colWidths=[tw/3]*3)
     rc.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1),GOLD_L),
-        ('BOX',           (0,0),(-1,-1),0.5,GOLD),
-        ('INNERGRID',     (0,0),(-1,-1),0.3,GOLD),
-        ('TOPPADDING',    (0,0),(-1,-1),5),
-        ('BOTTOMPADDING', (0,0),(-1,-1),5),
-        ('LEFTPADDING',   (0,0),(-1,-1),8),
+        ('BACKGROUND',    (0,0), (-1,-1), GOLD_L),
+        ('BOX',           (0,0), (-1,-1), 0.5,  GOLD),
+        ('INNERGRID',     (0,0), (-1,-1), 0.3,  GOLD),
+        ('TOPPADDING',    (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('LEFTPADDING',   (0,0), (-1,-1), 8),
     ]))
     st.append(rc)
 
-    # Uma página por chapa
+    # ── UMA PÁGINA POR CHAPA ──────────────────────────────────────
     for chapa in chapas_dict:
         st.append(PageBreak())
         idx = chapa['indice']
+
         st.append(_shdr(
             f'CHAPA {idx} DE {nc}  —  {chapa["n_pecas"]} peças  |  '
             f'Aproveitamento: {chapa["aproveitamento"]:.1f}%', s, tw))
         st.append(Spacer(1, 3*mm))
 
+        # Layout visual
         buf = _render(chapa, sw, sh, mx, my, idx, nc)
-        ih  = min((ph-4*mg)*.60, tw*(sh/sw))
-        iw  = ih*(sw/sh)
+        ih  = min((ph - 4*mg) * 0.65, tw * (sh/sw))
+        iw  = ih * (sw/sh)
         if iw > tw:
-            iw = tw; ih = iw*(sh/sw)
+            iw = tw; ih = iw * (sh/sw)
         st += [RLImage(buf, width=iw, height=ih), Spacer(1, 3*mm)]
 
+        # Sobra reaproveitável — sempre que detectada
         rem = _remnant(sw, sh, chapa['pecas'], mx, my)
         if rem:
             ra = rem[0]*rem[1]/1e6
             rb = Table([[Paragraph(
-                f'Sobra reaproveitável estimada: <b>{rem[0]:.0f} × {rem[1]:.0f} mm</b>'
+                f'Sobra reaproveitável estimada: '
+                f'<b>{rem[0]:.0f} × {rem[1]:.0f} mm</b>'
                 f'  |  Área: <b>{ra:.3f} m²</b>', s['n'])]],
                 colWidths=[tw])
             rb.setStyle(TableStyle([
-                ('BACKGROUND',    (0,0),(-1,-1),GOLD_L),
-                ('BOX',           (0,0),(-1,-1),0.5,GOLD),
-                ('TOPPADDING',    (0,0),(-1,-1),4),
-                ('BOTTOMPADDING', (0,0),(-1,-1),4),
-                ('LEFTPADDING',   (0,0),(-1,-1),8),
+                ('BACKGROUND',    (0,0), (-1,-1), GOLD_L),
+                ('BOX',           (0,0), (-1,-1), 0.5, GOLD),
+                ('TOPPADDING',    (0,0), (-1,-1), 5),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+                ('LEFTPADDING',   (0,0), (-1,-1), 8),
             ]))
             st += [rb, Spacer(1, 2*mm)]
 
-        hdr2 = [Paragraph(t, s['b']) for t in
-                ['#','Peça','L × A (mm)','X (mm)','Y (mm)','Ângulo','Comp. corte']]
+        # Tabela de peças desta chapa
+        st.append(_shdr('PEÇAS NESTA CHAPA', s, tw))
+        st.append(Spacer(1, 1*mm))
+
+        hdr2 = [Paragraph(t, s['b']) for t in [
+            '#', 'Peça', 'L × A (mm)', 'Pos. X (mm)', 'Pos. Y (mm)',
+            'Ângulo', 'Rec. internos', 'Comp. corte',
+        ]]
         rows2 = [hdr2]
-        for j,p in enumerate(sorted(chapa['pecas'],
-                                     key=lambda x: x['w']*x['h'], reverse=True)):
+        for j, p in enumerate(sorted(chapa['pecas'],
+                                      key=lambda x: x['w']*x['h'], reverse=True)):
             rows2.append([
-                Paragraph(str(j+1), s['sm']),
-                Paragraph(p['nome'], s['n']),
+                Paragraph(str(j+1),                        s['sm']),
+                Paragraph(p['nome'],                       s['n']),
                 Paragraph(f"{p['w']:.1f} × {p['h']:.1f}", s['sm']),
-                Paragraph(f"{p['x']:.1f}", s['sm']),
-                Paragraph(f"{p['y']:.1f}", s['sm']),
-                Paragraph(f"{p.get('angulo',0):.0f}°", s['sm']),
-                Paragraph(f"{_cut_mm(p)/1000:.3f} m", s['sm']),
+                Paragraph(f"{p['x']:.1f}",                 s['sm']),
+                Paragraph(f"{p['y']:.1f}",                 s['sm']),
+                Paragraph(f"{p.get('angulo', 0):.0f}°",    s['sm']),
+                Paragraph(str(_n_internos(p)),             s['sm']),
+                Paragraph(f"{_cut_mm(p)/1000:.3f} m",      s['sm']),
             ])
-        cw2 = [tw*f for f in (.05,.32,.18,.12,.12,.10,.11)]
+
+        cw2 = [tw*f for f in (.04, .28, .14, .11, .11, .09, .11, .12)]
         lt2 = Table(rows2, colWidths=cw2, repeatRows=1)
         lt2.setStyle(TableStyle([
-            ('FONTSIZE',   (0,0),(-1,-1),7.5),
-            ('GRID',       (0,0),(-1,-1),0.3,GRAY_M),
-            ('BACKGROUND', (0,0),(-1,0),BLU_D),
-            ('TEXTCOLOR',  (0,0),(-1,0),WHITE),
-            ('ALIGN',      (2,0),(-1,-1),'CENTER'),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[BLU_L,WHITE]),
-            ('TOPPADDING',    (0,0),(-1,-1),3),
-            ('BOTTOMPADDING', (0,0),(-1,-1),3),
-            ('LEFTPADDING',   (0,0),(-1,-1),4),
+            ('FONTSIZE',       (0,0), (-1,-1), 7.5),
+            ('GRID',           (0,0), (-1,-1), 0.3, GRAY_M),
+            ('BACKGROUND',     (0,0), (-1, 0), BLU_D),
+            ('TEXTCOLOR',      (0,0), (-1, 0), WHITE),
+            ('ALIGN',          (2,0), (-1,-1), 'CENTER'),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [BLU_L, WHITE]),
+            ('TOPPADDING',     (0,0), (-1,-1), 3),
+            ('BOTTOMPADDING',  (0,0), (-1,-1), 3),
+            ('LEFTPADDING',    (0,0), (-1,-1), 4),
         ]))
         st.append(lt2)
 
+    # Rodapé
     def _footer(canvas, doc):
         canvas.saveState()
         canvas.setFont('Helvetica', 7)
         canvas.setFillColor(colors.gray)
-        canvas.drawString(mg, 10*mm, f'Nesting 2D  —  {nome_p}  —  {datahora}')
-        canvas.drawRightString(pw-mg, 10*mm, f'Pagina {doc.page}')
+        canvas.drawString(mg, 10*mm,
+                          f'Nesting 2D  —  {nome_p}  —  {datahora}')
+        canvas.drawRightString(pw - mg, 10*mm, f'Página {doc.page}')
         canvas.restoreState()
 
     doc.build(st, onFirstPage=_footer, onLaterPages=_footer)
